@@ -1,0 +1,7 @@
+Flask
+flask-cors
+stripe
+cloudinary
+gunicorn
+python-dotenv
+Werkzeug
