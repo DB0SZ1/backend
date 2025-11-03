@@ -446,6 +446,9 @@ def confirm_donation():
 def cancel_reservation():
     data = request.json
     
+    if not data:
+        return jsonify({'success': False, 'message': 'No data provided'}), 400
+    
     required = ['firstName', 'lastName', 'email', 'requestType', 'reason']
     if not all(data.get(field) for field in required):
         return jsonify({'success': False, 'message': 'Missing required fields'}), 400
@@ -458,9 +461,9 @@ def cancel_reservation():
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''',
             (
                 data['firstName'], data['lastName'], data['email'], 
-                data.get('phone', ''), data['requestType'], 
-                data.get('numberOfGuests', 0), data['reason'],
-                data.get('zoomInterest', False), data.get('futureUpdates', False)
+                data.get('phone') or '', data['requestType'], 
+                data.get('numberOfGuests') or 0, data['reason'],
+                data.get('zoomInterest') or False, data.get('futureUpdates') or False
             )
         )
         db.commit()
@@ -483,13 +486,15 @@ def get_stats():
     try:
         db = get_db()
         
-        total_raised = db.execute(
+        total_row = db.execute(
             "SELECT SUM(amount) as total FROM donations WHERE status = 'completed'"
-        ).fetchone()['total'] or 0
+        ).fetchone()
+        total_raised = total_row['total'] if total_row and total_row['total'] else 0
         
-        donor_count = db.execute(
+        donor_row = db.execute(
             "SELECT COUNT(DISTINCT donor_email) as count FROM donations WHERE status = 'completed'"
-        ).fetchone()['count'] or 0
+        ).fetchone()
+        donor_count = donor_row['count'] if donor_row else 0
         
         return jsonify({
             'success': True,
@@ -517,4 +522,13 @@ def health_check():
 # ========================================
 if __name__ == '__main__':
     init_db()
-    app.run(debug=os.getenv('DEBUG', 'False') == 'True', host='0.0.0.0', port=5000)
+    port = int(os.getenv('PORT', 5000))
+    app.run(debug=os.getenv('DEBUG', 'False') == 'True', host='0.0.0.0', port=port)
+
+# For gunicorn (Railway/production)
+# This ensures the app works when run with gunicorn
+if os.getenv('RAILWAY_ENVIRONMENT'):
+    try:
+        init_db()
+    except:
+        pass  # Database might already exist
