@@ -160,6 +160,19 @@ def send_email_notification(to_email, subject, body):
     print(f"Email notification: {subject} to {to_email}")
     pass
 
+@app.route('/')
+def index():
+    return jsonify({
+        'message': 'Celebration Backend API',
+        'status': 'running',
+        'endpoints': {
+            'health': '/api/health',
+            'messages': '/api/messages',
+            'gallery': '/api/gallery/folders',
+            'donations': '/api/donations/create-intent',
+            'stats': '/api/stats'
+        }
+    })
 # ========================================
 # GALLERY ENDPOINTS
 # ========================================
