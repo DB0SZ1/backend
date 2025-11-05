@@ -6,6 +6,7 @@ Features:
 - Video size limits (50MB for free tier)
 - Optional fallback to local storage for videos
 - Automatic format conversion
+- Stripe webhook integration for donation tracking
 """
 
 from flask import Flask, request, jsonify, send_from_directory
@@ -270,6 +271,7 @@ def index():
             'messages': '/api/messages',
             'gallery': '/api/gallery/folders',
             'donations': '/api/donations/create-intent',
+            'webhook': '/api/stripe/webhook',
             'stats': '/api/stats',
             'memories': '/api/memories',
             'videos': '/api/memories/videos',
@@ -585,10 +587,11 @@ def create_payment_intent():
             }
         )
         
+        # Store donation with pending status
         db = get_db()
         db.execute(
-            'INSERT INTO donations (donor_name, donor_email, amount, charity_id, charity_name, message, stripe_payment_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            (data.get('donor_name'), data.get('donor_email'), amount, data.get('charity_id'), data.get('charity_name'), data.get('message'), session.id)
+            'INSERT INTO donations (donor_name, donor_email, amount, charity_id, charity_name, message, stripe_payment_id, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            (data.get('donor_name'), data.get('donor_email'), amount, data.get('charity_id'), data.get('charity_name'), data.get('message'), session.id, 'pending')
         )
         db.commit()
         
@@ -597,11 +600,80 @@ def create_payment_intent():
             'checkout_url': session.url
         })
     except Exception as e:
+        print(f"Payment intent error: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
-# (Continue with remaining endpoints - webhook, cancellation, stats, health check)
-# ... [Rest of the endpoints remain the same as original]
+@app.route('/api/stripe/webhook', methods=['POST'])
+def stripe_webhook():
+    """
+    Handle Stripe webhook events
+    This marks donations as completed when payment succeeds
+    """
+    payload = request.get_data()
+    sig_header = request.headers.get('Stripe-Signature')
+    
+    try:
+        # Verify webhook signature
+        if STRIPE_WEBHOOK_SECRET:
+            event = stripe.Webhook.construct_event(
+                payload, sig_header, STRIPE_WEBHOOK_SECRET
+            )
+        else:
+            # For testing without webhook secret (NOT RECOMMENDED IN PRODUCTION)
+            event = json.loads(payload)
+            print("⚠️ WARNING: Processing webhook without signature verification!")
+        
+        print(f"📨 Received webhook event: {event['type']}")
+        
+        # Handle the event
+        if event['type'] == 'checkout.session.completed':
+            session = event['data']['object']
+            
+            # Update donation status in database
+            db = get_db()
+            result = db.execute(
+                "UPDATE donations SET status = 'completed' WHERE stripe_payment_id = ?",
+                (session['id'],)
+            )
+            db.commit()
+            
+            if result.rowcount > 0:
+                print(f"✅ Donation completed: {session['id']}")
+            else:
+                print(f"⚠️ No donation found with ID: {session['id']}")
+            
+        elif event['type'] == 'checkout.session.expired':
+            session = event['data']['object']
+            
+            # Mark as failed
+            db = get_db()
+            db.execute(
+                "UPDATE donations SET status = 'failed' WHERE stripe_payment_id = ?",
+                (session['id'],)
+            )
+            db.commit()
+            
+            print(f"❌ Donation expired: {session['id']}")
+        
+        return jsonify({'success': True}), 200
+        
+    except ValueError as e:
+        # Invalid payload
+        print(f"⚠️ Webhook error - Invalid payload: {e}")
+        return jsonify({'success': False, 'error': 'Invalid payload'}), 400
+        
+    except stripe.error.SignatureVerificationError as e:
+        # Invalid signature
+        print(f"⚠️ Webhook error - Invalid signature: {e}")
+        return jsonify({'success': False, 'error': 'Invalid signature'}), 400
+        
+    except Exception as e:
+        print(f"⚠️ Webhook error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
+# ========================================
+# CANCELLATION ENDPOINT
+# ========================================
 @app.route('/api/cancel-reservation', methods=['POST'])
 def cancel_reservation():
     data = request.json
@@ -635,21 +707,27 @@ def cancel_reservation():
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
+# ========================================
+# STATS ENDPOINT
+# ========================================
 @app.route('/api/stats', methods=['GET'])
 def get_stats():
     try:
         db = get_db()
         
+        # Get total raised from completed donations only
         total_row = db.execute(
             "SELECT SUM(amount) as total FROM donations WHERE status = 'completed'"
         ).fetchone()
         total_raised = total_row['total'] if total_row and total_row['total'] else 0
         
+        # Get unique donor count from completed donations
         donor_row = db.execute(
             "SELECT COUNT(DISTINCT donor_email) as count FROM donations WHERE status = 'completed'"
         ).fetchone()
         donor_count = donor_row['count'] if donor_row else 0
         
+        # Get memory counts
         photo_count = db.execute("SELECT COUNT(*) as count FROM memories WHERE type = 'photo'").fetchone()['count']
         video_count = db.execute("SELECT COUNT(*) as count FROM memories WHERE type = 'video'").fetchone()['count']
         message_count = db.execute("SELECT COUNT(*) as count FROM messages").fetchone()['count']
@@ -657,7 +735,7 @@ def get_stats():
         return jsonify({
             'success': True,
             'stats': {
-                'total_raised': total_raised,
+                'total_raised': float(total_raised),
                 'donor_count': donor_count,
                 'goal': 10000,
                 'photo_count': photo_count,
@@ -666,16 +744,33 @@ def get_stats():
             }
         })
     except Exception as e:
+        print(f"Stats error: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
+# ========================================
+# HEALTH CHECK
+# ========================================
 @app.route('/api/health', methods=['GET'])
 def health_check():
+    try:
+        # Check database connection
+        db = get_db()
+        db.execute('SELECT 1').fetchone()
+        db_status = 'healthy'
+    except Exception as e:
+        db_status = f'error: {str(e)}'
+    
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
+        'database': db_status,
         'storage': {
             'cloudinary': 'enabled',
             'local_videos': USE_LOCAL_VIDEO_STORAGE
+        },
+        'stripe': {
+            'configured': bool(stripe.api_key),
+            'webhook_secret': bool(STRIPE_WEBHOOK_SECRET)
         }
     })
 
@@ -687,8 +782,10 @@ if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
     app.run(debug=os.getenv('DEBUG', 'False') == 'True', host='0.0.0.0', port=port)
 
+# Initialize database when running on Railway
 if os.getenv('RAILWAY_ENVIRONMENT'):
     try:
         init_db()
-    except:
-        pass
+        print("✅ Database initialized on Railway")
+    except Exception as e:
+        print(f"⚠️ Database initialization error: {e}")
