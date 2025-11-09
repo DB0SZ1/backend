@@ -1,12 +1,7 @@
 """
-Celebration Website Backend - Optimized for Free Cloudinary Tier
+Celebration Website Backend - FIXED VERSION
 Flask + SQLite3 + Stripe + Cloudinary
-Features:
-- Aggressive image compression
-- Video size limits (50MB for free tier)
-- Optional fallback to local storage for videos
-- Automatic format conversion
-- Stripe webhook integration for donation tracking
+Complete with all fixes for photo/video uploads
 """
 
 from flask import Flask, request, jsonify, send_from_directory
@@ -23,7 +18,14 @@ import io
 import json
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={
+    r"/api/*": {
+        "origins": "*",
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"],
+        "supports_credentials": False
+    }
+})
 
 # ========================================
 # CONFIGURATION
@@ -31,14 +33,14 @@ CORS(app)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-change-in-production')
 app.config['DATABASE'] = 'celebration.db'
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max request size
-app.config['UPLOAD_FOLDER'] = 'uploads/videos'  # Fallback local storage for videos
+app.config['UPLOAD_FOLDER'] = 'uploads/videos'
 
-# Cloudinary Free Tier Limits
-MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB (will be compressed further)
+# File size limits
+MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB
 MAX_VIDEO_SIZE = 50 * 1024 * 1024  # 50MB for Cloudinary free tier
 USE_LOCAL_VIDEO_STORAGE = os.getenv('USE_LOCAL_VIDEO_STORAGE', 'false').lower() == 'true'
 
-# Create upload folder if it doesn't exist
+# Create upload folder
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Stripe Configuration
@@ -74,7 +76,7 @@ def init_db():
         )
     ''')
     
-    # Memories table (photos, videos, text, past)
+    # Memories table
     db.execute('''
         CREATE TABLE IF NOT EXISTS memories (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -152,18 +154,18 @@ def init_db():
     db.close()
 
 # ========================================
-# HELPER FUNCTIONS
+# HELPER FUNCTIONS - FIXED
 # ========================================
-def compress_image(file_data, max_width=1200, quality=75):
+def compress_image(file_bytes, max_width=1200, quality=75):
     """
-    Aggressively compress image to save Cloudinary storage
+    Compress image from bytes data
     Returns: BytesIO object with compressed image
     """
     try:
-        # Open image
-        img = Image.open(io.BytesIO(file_data))
+        # Open image from bytes
+        img = Image.open(io.BytesIO(file_bytes))
         
-        # Convert RGBA to RGB if necessary
+        # Convert RGBA to RGB
         if img.mode in ('RGBA', 'LA', 'P'):
             background = Image.new('RGB', img.size, (255, 255, 255))
             if img.mode == 'P':
@@ -187,16 +189,17 @@ def compress_image(file_data, max_width=1200, quality=75):
         print(f"Image compression error: {e}")
         return None
 
-def upload_to_cloudinary(file_data, folder='memories', is_video=False):
+def upload_to_cloudinary_from_bytes(file_bytes, folder='memories', is_video=False):
     """
-    Upload file to Cloudinary with optimization
-    Returns: dict with url and public_id
+    Upload file to Cloudinary from bytes data
+    Returns: dict with url, public_id, and size
     """
     try:
         if is_video:
-            # Video upload - use lower quality for free tier
+            # Video upload - wrap bytes in BytesIO
+            file_stream = io.BytesIO(file_bytes)
             result = cloudinary.uploader.upload(
-                file_data,
+                file_stream,
                 folder=f'celebration/{folder}',
                 resource_type='video',
                 transformation=[
@@ -207,8 +210,8 @@ def upload_to_cloudinary(file_data, folder='memories', is_video=False):
                 ]
             )
         else:
-            # Image upload - aggressive compression
-            compressed = compress_image(file_data.read())
+            # Image upload - compress first
+            compressed = compress_image(file_bytes)
             if not compressed:
                 return None
             
@@ -231,19 +234,11 @@ def upload_to_cloudinary(file_data, folder='memories', is_video=False):
         return None
 
 def save_video_locally(file, filename):
-    """
-    Save video to local storage as fallback
-    Returns: URL path for the video
-    """
+    """Save video to local storage as fallback"""
     try:
-        # Secure filename
         filename = secure_filename(filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        
-        # Save file
         file.save(filepath)
-        
-        # Return URL (adjust based on your deployment)
         return f'/uploads/videos/{filename}'
     except Exception as e:
         print(f"Local storage error: {e}")
@@ -260,8 +255,9 @@ def serve_video(filename):
 @app.route('/')
 def index():
     return jsonify({
-        'message': 'Celebration Backend API - Optimized',
+        'message': 'Celebration Backend API - Fixed & Optimized',
         'status': 'running',
+        'version': '2.0',
         'storage': {
             'cloudinary': 'enabled',
             'local_video_fallback': USE_LOCAL_VIDEO_STORAGE
@@ -274,6 +270,7 @@ def index():
             'webhook': '/api/stripe/webhook',
             'stats': '/api/stats',
             'memories': '/api/memories',
+            'photos': '/api/memories/photos',
             'videos': '/api/memories/videos',
             'past_memories': '/api/memories/past'
         }
@@ -368,7 +365,7 @@ def submit_message():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 # ========================================
-# MEMORIES ENDPOINTS
+# MEMORIES ENDPOINTS - FIXED
 # ========================================
 @app.route('/api/memories', methods=['GET'])
 def get_memories():
@@ -395,104 +392,252 @@ def get_memories():
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
-@app.route('/api/memories/photos', methods=['POST'])
+@app.route('/api/memories/photos', methods=['POST', 'OPTIONS'])
 def submit_photo_memory():
+    """Upload photo memories with size validation and compression"""
+    
+    # Handle CORS preflight
+    if request.method == 'OPTIONS':
+        return jsonify({'success': True}), 200
+    
+    # Validate files exist
     if 'photos[]' not in request.files:
-        return jsonify({'success': False, 'message': 'No photos provided'}), 400
+        return jsonify({
+            'success': False, 
+            'message': 'No photos provided'
+        }), 400
     
     name = request.form.get('name')
-    caption = request.form.get('caption') or ''
+    caption = request.form.get('caption', '')
     
     if not name:
-        return jsonify({'success': False, 'message': 'Name required'}), 400
+        return jsonify({
+            'success': False, 
+            'message': 'Name is required'
+        }), 400
     
     try:
         db = get_db()
         files = request.files.getlist('photos[]')
+        
+        if not files or len(files) == 0:
+            return jsonify({
+                'success': False,
+                'message': 'No valid photos found'
+            }), 400
+        
         uploaded_count = 0
         total_size = 0
+        errors = []
         
         for file in files:
-            if file and file.filename:
+            if not file or not file.filename:
+                continue
+            
+            # Check file size BEFORE processing (5MB limit)
+            file.seek(0, 2)  # Seek to end
+            file_size = file.tell()
+            file.seek(0)  # Reset to beginning
+            
+            if file_size > MAX_IMAGE_SIZE:
+                errors.append(f"{file.filename} exceeds 5MB limit")
+                continue
+            
+            # Validate file type
+            if not file.content_type.startswith('image/'):
+                errors.append(f"{file.filename} is not an image")
+                continue
+            
+            try:
+                # Read file data
+                file_data = file.read()
+                file.seek(0)  # Reset for potential re-read
+                
                 # Upload to Cloudinary with compression
-                upload_result = upload_to_cloudinary(file, 'memories', is_video=False)
+                upload_result = upload_to_cloudinary_from_bytes(
+                    file_data, 
+                    'memories', 
+                    is_video=False
+                )
                 
                 if upload_result:
+                    # Store in database
                     db.execute(
-                        'INSERT INTO memories (name, caption, image_url, cloudinary_id, type, storage_type, file_size) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                        (name, caption, upload_result['url'], upload_result['public_id'], 'photo', 'cloudinary', upload_result['size'])
+                        '''INSERT INTO memories 
+                        (name, caption, image_url, cloudinary_id, type, storage_type, file_size) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?)''',
+                        (
+                            name, 
+                            caption, 
+                            upload_result['url'], 
+                            upload_result['public_id'], 
+                            'photo', 
+                            'cloudinary', 
+                            upload_result['size']
+                        )
                     )
                     uploaded_count += 1
                     total_size += upload_result['size']
+                else:
+                    errors.append(f"Failed to upload {file.filename}")
+                    
+            except Exception as e:
+                print(f"Error processing {file.filename}: {str(e)}")
+                errors.append(f"Error with {file.filename}: {str(e)}")
         
         db.commit()
         
-        return jsonify({
-            'success': True,
-            'message': f'{uploaded_count} photo(s) uploaded successfully',
-            'total_size': total_size
-        })
+        # Build response message
+        if uploaded_count > 0:
+            message = f'{uploaded_count} photo(s) uploaded successfully'
+            if errors:
+                message += f' ({len(errors)} failed)'
+            
+            return jsonify({
+                'success': True,
+                'message': message,
+                'uploaded': uploaded_count,
+                'total_size': total_size,
+                'errors': errors if errors else None
+            }), 200
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'No photos could be uploaded',
+                'errors': errors
+            }), 400
+            
     except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
+        print(f"Photo upload error: {str(e)}")
+        return jsonify({
+            'success': False, 
+            'message': f'Server error: {str(e)}'
+        }), 500
 
-@app.route('/api/memories/videos', methods=['POST'])
+@app.route('/api/memories/videos', methods=['POST', 'OPTIONS'])
 def submit_video_memory():
+    """Upload video memories with size validation"""
+    
+    # Handle CORS preflight
+    if request.method == 'OPTIONS':
+        return jsonify({'success': True}), 200
+    
     if 'videos[]' not in request.files:
-        return jsonify({'success': False, 'message': 'No videos provided'}), 400
+        return jsonify({
+            'success': False, 
+            'message': 'No videos provided'
+        }), 400
     
     name = request.form.get('name')
-    caption = request.form.get('caption') or ''
+    caption = request.form.get('caption', '')
     
     if not name:
-        return jsonify({'success': False, 'message': 'Name required'}), 400
+        return jsonify({
+            'success': False, 
+            'message': 'Name is required'
+        }), 400
     
     try:
         db = get_db()
         files = request.files.getlist('videos[]')
+        
+        if not files or len(files) == 0:
+            return jsonify({
+                'success': False,
+                'message': 'No valid videos found'
+            }), 400
+        
         uploaded_count = 0
+        errors = []
         storage_type = 'local' if USE_LOCAL_VIDEO_STORAGE else 'cloudinary'
         
         for file in files:
-            if file and file.filename:
-                # Check file size
-                file.seek(0, 2)
-                file_size = file.tell()
-                file.seek(0)
-                
-                if file_size > MAX_VIDEO_SIZE:
-                    continue  # Skip files over 50MB
-                
+            if not file or not file.filename:
+                continue
+            
+            # Check file size (50MB limit for Cloudinary free tier)
+            file.seek(0, 2)
+            file_size = file.tell()
+            file.seek(0)
+            
+            if file_size > MAX_VIDEO_SIZE:
+                errors.append(f"{file.filename} exceeds 50MB limit")
+                continue
+            
+            # Validate file type
+            if not file.content_type.startswith('video/'):
+                errors.append(f"{file.filename} is not a video")
+                continue
+            
+            try:
                 video_url = None
                 public_id = None
                 
                 if USE_LOCAL_VIDEO_STORAGE:
                     # Save locally
-                    video_url = save_video_locally(file, f"{datetime.now().timestamp()}_{file.filename}")
+                    timestamp = datetime.now().timestamp()
+                    safe_filename = secure_filename(file.filename)
+                    video_url = save_video_locally(file, f"{timestamp}_{safe_filename}")
                     storage_type = 'local'
                 else:
                     # Upload to Cloudinary
-                    upload_result = upload_to_cloudinary(file, 'videos', is_video=True)
+                    file_data = file.read()
+                    file.seek(0)
+                    
+                    upload_result = upload_to_cloudinary_from_bytes(
+                        file_data, 
+                        'videos', 
+                        is_video=True
+                    )
+                    
                     if upload_result:
                         video_url = upload_result['url']
                         public_id = upload_result['public_id']
                         file_size = upload_result['size']
+                    else:
+                        errors.append(f"Failed to upload {file.filename}")
+                        continue
                 
                 if video_url:
                     db.execute(
-                        'INSERT INTO memories (name, caption, image_url, cloudinary_id, type, storage_type, file_size) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                        '''INSERT INTO memories 
+                        (name, caption, image_url, cloudinary_id, type, storage_type, file_size) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?)''',
                         (name, caption, video_url, public_id, 'video', storage_type, file_size)
                     )
                     uploaded_count += 1
+                    
+            except Exception as e:
+                print(f"Error processing {file.filename}: {str(e)}")
+                errors.append(f"Error with {file.filename}: {str(e)}")
         
         db.commit()
         
-        return jsonify({
-            'success': True,
-            'message': f'{uploaded_count} video(s) uploaded successfully',
-            'storage': storage_type
-        })
+        if uploaded_count > 0:
+            message = f'{uploaded_count} video(s) uploaded successfully'
+            if errors:
+                message += f' ({len(errors)} failed)'
+            
+            return jsonify({
+                'success': True,
+                'message': message,
+                'uploaded': uploaded_count,
+                'storage': storage_type,
+                'errors': errors if errors else None
+            }), 200
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'No videos could be uploaded',
+                'errors': errors
+            }), 400
+            
     except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
+        print(f"Video upload error: {str(e)}")
+        return jsonify({
+            'success': False, 
+            'message': f'Server error: {str(e)}'
+        }), 500
 
 @app.route('/api/memories/text', methods=['POST'])
 def submit_text_memory():
@@ -553,12 +698,10 @@ def create_payment_intent():
         return jsonify({'success': False, 'message': 'Invalid amount'}), 400
     
     try:
-        # Get the origin from request headers to build redirect URLs
         origin = request.headers.get('Origin') or request.headers.get('Referer', '').rstrip('/')
         if not origin:
-            origin = 'https://yoursite.com'  # Fallback
+            origin = 'https://yoursite.com'
         
-        # Build success and cancel URLs dynamically
         success_url = f"{origin}/charity?donation=success"
         cancel_url = f"{origin}/charity?donation=cancelled"
         
@@ -587,7 +730,6 @@ def create_payment_intent():
             }
         )
         
-        # Store donation with pending status
         db = get_db()
         db.execute(
             'INSERT INTO donations (donor_name, donor_email, amount, charity_id, charity_name, message, stripe_payment_id, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
@@ -605,31 +747,24 @@ def create_payment_intent():
 
 @app.route('/api/stripe/webhook', methods=['POST'])
 def stripe_webhook():
-    """
-    Handle Stripe webhook events
-    This marks donations as completed when payment succeeds
-    """
+    """Handle Stripe webhook events"""
     payload = request.get_data()
     sig_header = request.headers.get('Stripe-Signature')
     
     try:
-        # Verify webhook signature
         if STRIPE_WEBHOOK_SECRET:
             event = stripe.Webhook.construct_event(
                 payload, sig_header, STRIPE_WEBHOOK_SECRET
             )
         else:
-            # For testing without webhook secret (NOT RECOMMENDED IN PRODUCTION)
             event = json.loads(payload)
             print("⚠️ WARNING: Processing webhook without signature verification!")
         
         print(f"📨 Received webhook event: {event['type']}")
         
-        # Handle the event
         if event['type'] == 'checkout.session.completed':
             session = event['data']['object']
             
-            # Update donation status in database
             db = get_db()
             result = db.execute(
                 "UPDATE donations SET status = 'completed' WHERE stripe_payment_id = ?",
@@ -645,7 +780,6 @@ def stripe_webhook():
         elif event['type'] == 'checkout.session.expired':
             session = event['data']['object']
             
-            # Mark as failed
             db = get_db()
             db.execute(
                 "UPDATE donations SET status = 'failed' WHERE stripe_payment_id = ?",
@@ -658,12 +792,10 @@ def stripe_webhook():
         return jsonify({'success': True}), 200
         
     except ValueError as e:
-        # Invalid payload
         print(f"⚠️ Webhook error - Invalid payload: {e}")
         return jsonify({'success': False, 'error': 'Invalid payload'}), 400
         
     except stripe.error.SignatureVerificationError as e:
-        # Invalid signature
         print(f"⚠️ Webhook error - Invalid signature: {e}")
         return jsonify({'success': False, 'error': 'Invalid signature'}), 400
         
@@ -715,19 +847,16 @@ def get_stats():
     try:
         db = get_db()
         
-        # Get total raised from completed donations only
         total_row = db.execute(
             "SELECT SUM(amount) as total FROM donations WHERE status = 'completed'"
         ).fetchone()
         total_raised = total_row['total'] if total_row and total_row['total'] else 0
         
-        # Get unique donor count from completed donations
         donor_row = db.execute(
             "SELECT COUNT(DISTINCT donor_email) as count FROM donations WHERE status = 'completed'"
         ).fetchone()
         donor_count = donor_row['count'] if donor_row else 0
         
-        # Get memory counts
         photo_count = db.execute("SELECT COUNT(*) as count FROM memories WHERE type = 'photo'").fetchone()['count']
         video_count = db.execute("SELECT COUNT(*) as count FROM memories WHERE type = 'video'").fetchone()['count']
         message_count = db.execute("SELECT COUNT(*) as count FROM messages").fetchone()['count']
@@ -753,7 +882,6 @@ def get_stats():
 @app.route('/api/health', methods=['GET'])
 def health_check():
     try:
-        # Check database connection
         db = get_db()
         db.execute('SELECT 1').fetchone()
         db_status = 'healthy'
