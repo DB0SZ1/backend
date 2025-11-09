@@ -1,7 +1,7 @@
 """
-Celebration Website Backend - FIXED VERSION
+Celebration Website Backend - FIXED VERSION with AUTO-MIGRATION
 Flask + SQLite3 + Stripe + Cloudinary
-Complete with all fixes for photo/video uploads
+Complete with all fixes for photo/video uploads + automatic database migrations
 """
 
 from flask import Flask, request, jsonify, send_from_directory
@@ -153,6 +153,49 @@ def init_db():
     db.commit()
     db.close()
 
+def run_migrations():
+    """Run database migrations automatically on startup"""
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        
+        print("🔄 Checking for database migrations...")
+        
+        # Check existing columns in memories table
+        cursor.execute("PRAGMA table_info(memories)")
+        existing_columns = [column[1] for column in cursor.fetchall()]
+        
+        # Define columns that should exist
+        columns_to_add = [
+            ("storage_type", "TEXT DEFAULT 'cloudinary'"),
+            ("file_size", "INTEGER")
+        ]
+        
+        migration_applied = False
+        
+        # Add missing columns
+        for column_name, column_def in columns_to_add:
+            if column_name not in existing_columns:
+                try:
+                    cursor.execute(f"ALTER TABLE memories ADD COLUMN {column_name} {column_def}")
+                    print(f"✅ Migration: Added column '{column_name}' to memories table")
+                    migration_applied = True
+                except sqlite3.Error as e:
+                    print(f"⚠️ Migration warning for {column_name}: {e}")
+            else:
+                print(f"ℹ️ Column '{column_name}' already exists - skipping")
+        
+        if migration_applied:
+            db.commit()
+            print("✅ Database migrations completed successfully!")
+        else:
+            print("✅ Database schema is up to date - no migrations needed")
+        
+        db.close()
+        
+    except Exception as e:
+        print(f"⚠️ Migration error: {e}")
+
 # ========================================
 # HELPER FUNCTIONS - FIXED
 # ========================================
@@ -255,9 +298,9 @@ def serve_video(filename):
 @app.route('/')
 def index():
     return jsonify({
-        'message': 'Celebration Backend API - Fixed & Optimized',
+        'message': 'Celebration Backend API - Fixed & Optimized with Auto-Migration',
         'status': 'running',
-        'version': '2.0',
+        'version': '2.1',
         'storage': {
             'cloudinary': 'enabled',
             'local_video_fallback': USE_LOCAL_VIDEO_STORAGE
@@ -903,17 +946,19 @@ def health_check():
     })
 
 # ========================================
-# INITIALIZATION
+# INITIALIZATION WITH AUTO-MIGRATION
 # ========================================
 if __name__ == '__main__':
     init_db()
+    run_migrations()
     port = int(os.getenv('PORT', 5000))
     app.run(debug=os.getenv('DEBUG', 'False') == 'True', host='0.0.0.0', port=port)
 
-# Initialize database when running on Railway
+# Initialize database and run migrations when running on Railway
 if os.getenv('RAILWAY_ENVIRONMENT'):
     try:
         init_db()
-        print("✅ Database initialized on Railway")
+        run_migrations()
+        print("✅ Database initialized and migrated on Railway")
     except Exception as e:
         print(f"⚠️ Database initialization error: {e}")
