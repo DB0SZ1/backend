@@ -17,6 +17,8 @@ from werkzeug.utils import secure_filename
 from PIL import Image
 import io
 import json
+import requests
+from urllib.parse import urlparse, parse_qs
 
 app = Flask(__name__)
 CORS(app, resources={
@@ -1153,10 +1155,257 @@ def get_stats():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 # ========================================
+# GOOGLE DRIVE CONFIGURATION
+# ========================================
+DRIVE_FOLDER_ID = '1F4qa0G07v7uTF-P95kdWRilG8k2anknm'
+DRIVE_API_KEY = os.getenv('GOOGLE_DRIVE_API_KEY')
+
+def get_drive_folder_structure(folder_id):
+    """Fetch folder structure from Google Drive with error handling"""
+    if not DRIVE_API_KEY:
+        print("❌ GOOGLE_DRIVE_API_KEY not configured")
+        return []
+    
+    try:
+        url = 'https://www.googleapis.com/drive/v3/files'
+        params = {
+            'q': f"'{folder_id}' in parents and mimeType='application/vnd.google-apps.folder'",
+            'key': DRIVE_API_KEY,
+            'fields': 'files(id,name,createdTime)',
+            'orderBy': 'name'
+        }
+        
+        print(f"📁 Fetching Drive folders from: {folder_id}")
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        
+        folders = response.json().get('files', [])
+        print(f"✅ Found {len(folders)} folders")
+        return folders
+        
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 403:
+            print(f"❌ Drive API Error 403: Check API key and folder permissions")
+        else:
+            print(f"❌ Drive API HTTP Error: {e}")
+        return []
+    except Exception as e:
+        print(f"❌ Drive API error: {e}")
+        return []
+
+def get_drive_folder_images(folder_id):
+    """Fetch image files from a Drive folder with error handling"""
+    if not DRIVE_API_KEY:
+        print("❌ GOOGLE_DRIVE_API_KEY not configured")
+        return []
+    
+    try:
+        url = 'https://www.googleapis.com/drive/v3/files'
+        params = {
+            'q': f"'{folder_id}' in parents and (mimeType contains 'image/' or name contains '.heic' or name contains '.HEIC')",
+            'key': DRIVE_API_KEY,
+            'fields': 'files(id,name,thumbnailLink,webContentLink,createdTime,size,mimeType)',
+            'pageSize': 1000,
+            'orderBy': 'createdTime'
+        }
+        
+        print(f"🖼️  Fetching images from folder: {folder_id}")
+        response = requests.get(url, params=params, timeout=15)
+        response.raise_for_status()
+        
+        files = response.json().get('files', [])
+        
+        # Convert to direct image URLs with thumbnail support
+        for file in files:
+            # Use direct view URL for images
+            file['imageUrl'] = f"https://drive.google.com/uc?export=view&id={file['id']}"
+            
+            # Use thumbnail if available, otherwise use main image
+            if file.get('thumbnailLink'):
+                # Increase thumbnail size for better quality
+                file['thumbnailUrl'] = file['thumbnailLink'].replace('=s220', '=s400')
+            else:
+                file['thumbnailUrl'] = file['imageUrl']
+        
+        print(f"✅ Found {len(files)} images")
+        return files
+        
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 403:
+            print(f"❌ Drive API Error 403: Check API key and folder permissions")
+        else:
+            print(f"❌ Drive API HTTP Error: {e}")
+        return []
+    except Exception as e:
+        print(f"❌ Drive images API error: {e}")
+        return []
+
+# ========================================
+# GOOGLE DRIVE GALLERY ENDPOINTS
+# ========================================
+@app.route('/api/gallery/drive/folders', methods=['GET'])
+def get_drive_folders():
+    """Get all folders from Google Drive"""
+    
+    # Check if API key is configured
+    if not DRIVE_API_KEY:
+        return jsonify({
+            'success': False,
+            'message': 'Google Drive API key not configured. Please add GOOGLE_DRIVE_API_KEY to environment variables.'
+        }), 500
+    
+    try:
+        folders = get_drive_folder_structure(DRIVE_FOLDER_ID)
+        
+        if not folders:
+            return jsonify({
+                'success': True,
+                'folders': [],
+                'message': 'No folders found. Check folder ID and permissions.'
+            })
+        
+        # Enhance with image counts and metadata
+        enhanced_folders = []
+        for folder in folders:
+            images = get_drive_folder_images(folder['id'])
+            
+            enhanced_folder = {
+                'id': folder['id'],
+                'name': folder['name'],
+                'imageCount': len(images),
+                'gradient': 'folder-solo',
+                'icon': 'fa-folder',
+                'description': f"{len(images)} memories",
+                'createdTime': folder.get('createdTime', '')
+            }
+            enhanced_folders.append(enhanced_folder)
+        
+        return jsonify({
+            'success': True,
+            'folders': enhanced_folders,
+            'total': len(enhanced_folders)
+        })
+        
+    except Exception as e:
+        print(f"❌ Error in get_drive_folders: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Failed to fetch folders: {str(e)}'
+        }), 500
+
+@app.route('/api/gallery/drive/images', methods=['GET'])
+def get_drive_images():
+    """Get images from a specific Drive folder"""
+    folder_id = request.args.get('folderId')
+    
+    if not folder_id:
+        return jsonify({
+            'success': False,
+            'message': 'Folder ID required'
+        }), 400
+    
+    if not DRIVE_API_KEY:
+        return jsonify({
+            'success': False,
+            'message': 'Google Drive API key not configured'
+        }), 500
+    
+    try:
+        images = get_drive_folder_images(folder_id)
+        
+        return jsonify({
+            'success': True,
+            'images': images,
+            'total': len(images)
+        })
+        
+    except Exception as e:
+        print(f"❌ Error in get_drive_images: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Failed to fetch images: {str(e)}'
+        }), 500
+
+@app.route('/api/gallery/drive/sync', methods=['POST'])
+def sync_drive_gallery():
+    """Cache Drive folder structure in database for faster loading (optional)"""
+    
+    if not DRIVE_API_KEY:
+        return jsonify({
+            'success': False,
+            'message': 'Google Drive API key not configured'
+        }), 500
+    
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        
+        # Clear existing cache
+        cursor.execute('DELETE FROM gallery_images WHERE folder_name LIKE %s', ('drive_%',))
+        cursor.execute('DELETE FROM gallery_folders WHERE name LIKE %s', ('drive_%',))
+        
+        # Fetch and cache folders
+        folders = get_drive_folder_structure(DRIVE_FOLDER_ID)
+        
+        synced_folders = 0
+        synced_images = 0
+        
+        for folder in folders:
+            folder_key = f"drive_{folder['id']}"
+            
+            # Insert folder
+            cursor.execute(
+                '''INSERT INTO gallery_folders (name, display_name, icon, gradient, description, image_count)
+                   VALUES (%s, %s, %s, %s, %s, %s)
+                   ON CONFLICT (name) DO UPDATE SET
+                   display_name = EXCLUDED.display_name,
+                   image_count = EXCLUDED.image_count''',
+                (folder_key, folder['name'], 'fa-folder', 'folder-solo', '', 0)
+            )
+            
+            # Fetch and cache images
+            images = get_drive_folder_images(folder['id'])
+            
+            for idx, img in enumerate(images):
+                cursor.execute(
+                    '''INSERT INTO gallery_images (folder_name, image_url, cloudinary_id, order_index)
+                       VALUES (%s, %s, %s, %s)''',
+                    (folder_key, img['imageUrl'], img['id'], idx)
+                )
+                synced_images += 1
+            
+            # Update image count
+            cursor.execute(
+                'UPDATE gallery_folders SET image_count = %s WHERE name = %s',
+                (len(images), folder_key)
+            )
+            
+            synced_folders += 1
+        
+        db.commit()
+        cursor.close()
+        db.close()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Synced {synced_folders} folders and {synced_images} images from Google Drive',
+            'folders': synced_folders,
+            'images': synced_images
+        })
+        
+    except Exception as e:
+        print(f"❌ Error in sync_drive_gallery: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Sync failed: {str(e)}'
+        }), 500
+
+# ========================================
 # HEALTH CHECK
 # ========================================
 @app.route('/api/health', methods=['GET'])
 def health_check():
+    # Check database
     try:
         db = get_db()
         cursor = db.cursor()
@@ -1168,18 +1417,49 @@ def health_check():
     except Exception as e:
         db_status = f'error: {str(e)}'
     
+    # Check Google Drive API
+    drive_status = 'not_configured'
+    if DRIVE_API_KEY:
+        try:
+            # Test API with a simple request
+            folders = get_drive_folder_structure(DRIVE_FOLDER_ID)
+            if folders is not None:
+                drive_status = f'healthy ({len(folders)} folders)'
+            else:
+                drive_status = 'error: could not fetch folders'
+        except Exception as e:
+            drive_status = f'error: {str(e)}'
+    
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
-        'database': db_status,
-        'database_type': 'PostgreSQL',
+        'database': {
+            'status': db_status,
+            'type': 'PostgreSQL',
+            'url_configured': bool(os.getenv('DATABASE_URL'))
+        },
         'storage': {
-            'cloudinary': 'enabled',
-            'local_videos': USE_LOCAL_VIDEO_STORAGE
+            'cloudinary': {
+                'configured': bool(os.getenv('CLOUDINARY_CLOUD_NAME')),
+                'status': 'enabled' if os.getenv('CLOUDINARY_CLOUD_NAME') else 'not_configured'
+            },
+            'local_videos': USE_LOCAL_VIDEO_STORAGE,
+            'google_drive': {
+                'configured': bool(DRIVE_API_KEY),
+                'status': drive_status,
+                'folder_id': DRIVE_FOLDER_ID
+            }
         },
         'stripe': {
             'configured': bool(stripe.api_key),
             'webhook_secret': bool(STRIPE_WEBHOOK_SECRET)
+        },
+        'environment_variables': {
+            'DATABASE_URL': bool(os.getenv('DATABASE_URL')),
+            'GOOGLE_DRIVE_API_KEY': bool(DRIVE_API_KEY),
+            'CLOUDINARY_CLOUD_NAME': bool(os.getenv('CLOUDINARY_CLOUD_NAME')),
+            'STRIPE_SECRET_KEY': bool(stripe.api_key),
+            'SECRET_KEY': bool(app.config['SECRET_KEY'])
         }
     })
 
