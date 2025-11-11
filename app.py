@@ -1,12 +1,13 @@
 """
-Celebration Website Backend - FIXED VERSION with AUTO-MIGRATION
-Flask + SQLite3 + Stripe + Cloudinary
+Celebration Website Backend - POSTGRESQL VERSION
+Flask + PostgreSQL + Stripe + Cloudinary
 Complete with all fixes for photo/video uploads + automatic database migrations
 """
 
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-import sqlite3
+import psycopg2
+from psycopg2.extras import RealDictCursor
 import os
 from datetime import datetime
 import stripe
@@ -21,7 +22,7 @@ app = Flask(__name__)
 CORS(app, resources={
     r"/api/*": {
         "origins": "*",
-        "methods": ["GET", "POST", "OPTIONS"],
+        "methods": ["GET", "POST", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type"],
         "supports_credentials": False
     }
@@ -31,7 +32,6 @@ CORS(app, resources={
 # CONFIGURATION
 # ========================================
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-change-in-production')
-app.config['DATABASE'] = 'celebration.db'
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max request size
 app.config['UPLOAD_FOLDER'] = 'uploads/videos'
 
@@ -55,20 +55,25 @@ cloudinary.config(
 )
 
 # ========================================
-# DATABASE SETUP
+# DATABASE SETUP - POSTGRESQL
 # ========================================
 def get_db():
-    db = sqlite3.connect(app.config['DATABASE'])
-    db.row_factory = sqlite3.Row
-    return db
+    """Connect to PostgreSQL database using DATABASE_URL from Railway"""
+    conn = psycopg2.connect(
+        os.getenv('DATABASE_URL'),
+        cursor_factory=RealDictCursor
+    )
+    return conn
 
 def init_db():
+    """Initialize database tables"""
     db = get_db()
+    cursor = db.cursor()
     
     # Messages table
-    db.execute('''
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             name TEXT NOT NULL,
             relationship TEXT,
             message TEXT NOT NULL,
@@ -77,9 +82,9 @@ def init_db():
     ''')
     
     # Memories table
-    db.execute('''
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS memories (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             name TEXT NOT NULL,
             caption TEXT,
             image_url TEXT NOT NULL,
@@ -92,9 +97,9 @@ def init_db():
     ''')
     
     # Donations table
-    db.execute('''
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS donations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             donor_name TEXT NOT NULL,
             donor_email TEXT NOT NULL,
             amount REAL NOT NULL,
@@ -108,9 +113,9 @@ def init_db():
     ''')
     
     # Cancellations table
-    db.execute('''
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS cancellations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             first_name TEXT NOT NULL,
             last_name TEXT NOT NULL,
             email TEXT NOT NULL,
@@ -118,16 +123,16 @@ def init_db():
             request_type TEXT NOT NULL,
             number_of_guests INTEGER,
             reason TEXT NOT NULL,
-            zoom_interest BOOLEAN DEFAULT 0,
-            future_updates BOOLEAN DEFAULT 0,
+            zoom_interest BOOLEAN DEFAULT FALSE,
+            future_updates BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
     
     # Gallery folders metadata
-    db.execute('''
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS gallery_folders (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             name TEXT UNIQUE NOT NULL,
             display_name TEXT NOT NULL,
             icon TEXT DEFAULT 'fa-folder',
@@ -138,9 +143,9 @@ def init_db():
     ''')
     
     # Gallery images
-    db.execute('''
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS gallery_images (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             folder_name TEXT NOT NULL,
             image_url TEXT NOT NULL,
             cloudinary_id TEXT,
@@ -151,7 +156,9 @@ def init_db():
     ''')
     
     db.commit()
+    cursor.close()
     db.close()
+    print("✅ Database tables initialized")
 
 def run_migrations():
     """Run database migrations automatically on startup"""
@@ -162,8 +169,12 @@ def run_migrations():
         print("🔄 Checking for database migrations...")
         
         # Check existing columns in memories table
-        cursor.execute("PRAGMA table_info(memories)")
-        existing_columns = [column[1] for column in cursor.fetchall()]
+        cursor.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'memories'
+        """)
+        existing_columns = [row['column_name'] for row in cursor.fetchall()]
         
         # Define columns that should exist
         columns_to_add = [
@@ -180,7 +191,7 @@ def run_migrations():
                     cursor.execute(f"ALTER TABLE memories ADD COLUMN {column_name} {column_def}")
                     print(f"✅ Migration: Added column '{column_name}' to memories table")
                     migration_applied = True
-                except sqlite3.Error as e:
+                except psycopg2.Error as e:
                     print(f"⚠️ Migration warning for {column_name}: {e}")
             else:
                 print(f"ℹ️ Column '{column_name}' already exists - skipping")
@@ -191,6 +202,7 @@ def run_migrations():
         else:
             print("✅ Database schema is up to date - no migrations needed")
         
+        cursor.close()
         db.close()
         
     except Exception as e:
@@ -298,9 +310,10 @@ def serve_video(filename):
 @app.route('/')
 def index():
     return jsonify({
-        'message': 'Celebration Backend API - Fixed & Optimized with Auto-Migration',
+        'message': 'Celebration Backend API - PostgreSQL Version with Auto-Migration',
         'status': 'running',
-        'version': '2.1',
+        'version': '3.0',
+        'database': 'PostgreSQL',
         'storage': {
             'cloudinary': 'enabled',
             'local_video_fallback': USE_LOCAL_VIDEO_STORAGE
@@ -326,13 +339,15 @@ def index():
 def get_gallery_folders():
     try:
         db = get_db()
-        folders = db.execute(
-            'SELECT * FROM gallery_folders ORDER BY display_name'
-        ).fetchall()
+        cursor = db.cursor()
+        cursor.execute('SELECT * FROM gallery_folders ORDER BY display_name')
+        folders = cursor.fetchall()
+        cursor.close()
+        db.close()
         
         return jsonify({
             'success': True,
-            'folders': [dict(f) for f in folders]
+            'folders': folders
         })
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
@@ -346,14 +361,18 @@ def get_gallery_images():
     
     try:
         db = get_db()
-        images = db.execute(
-            'SELECT * FROM gallery_images WHERE folder_name = ? ORDER BY order_index',
+        cursor = db.cursor()
+        cursor.execute(
+            'SELECT * FROM gallery_images WHERE folder_name = %s ORDER BY order_index',
             (folder_name,)
-        ).fetchall()
+        )
+        images = cursor.fetchall()
+        cursor.close()
+        db.close()
         
         return jsonify({
             'success': True,
-            'images': [dict(img) for img in images]
+            'images': images
         })
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
@@ -368,17 +387,24 @@ def get_messages():
     
     try:
         db = get_db()
-        messages = db.execute(
-            'SELECT * FROM messages ORDER BY created_at DESC LIMIT ? OFFSET ?',
-            (limit, offset)
-        ).fetchall()
+        cursor = db.cursor()
         
-        total_row = db.execute('SELECT COUNT(*) as count FROM messages').fetchone()
+        cursor.execute(
+            'SELECT * FROM messages ORDER BY created_at DESC LIMIT %s OFFSET %s',
+            (limit, offset)
+        )
+        messages = cursor.fetchall()
+        
+        cursor.execute('SELECT COUNT(*) as count FROM messages')
+        total_row = cursor.fetchone()
         total = total_row['count'] if total_row else 0
+        
+        cursor.close()
+        db.close()
         
         return jsonify({
             'success': True,
-            'messages': [dict(msg) for msg in messages],
+            'messages': messages,
             'total': total
         })
     except Exception as e:
@@ -393,18 +419,102 @@ def submit_message():
     
     try:
         db = get_db()
-        cursor = db.execute(
-            'INSERT INTO messages (name, relationship, message) VALUES (?, ?, ?)',
+        cursor = db.cursor()
+        cursor.execute(
+            'INSERT INTO messages (name, relationship, message) VALUES (%s, %s, %s) RETURNING id',
             (data['name'], data.get('relationship', ''), data['message'])
         )
+        result = cursor.fetchone()
         db.commit()
+        cursor.close()
+        db.close()
         
         return jsonify({
             'success': True,
             'message': 'Message submitted successfully',
-            'id': cursor.lastrowid
+            'id': result['id']
         })
     except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/messages/<int:message_id>', methods=['DELETE', 'OPTIONS'])
+def delete_message(message_id):
+    """Delete a specific message"""
+    
+    if request.method == 'OPTIONS':
+        return jsonify({'success': True}), 200
+    
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        
+        # Check if message exists
+        cursor.execute('SELECT * FROM messages WHERE id = %s', (message_id,))
+        message = cursor.fetchone()
+        
+        if not message:
+            cursor.close()
+            db.close()
+            return jsonify({'success': False, 'message': 'Message not found'}), 404
+        
+        # Delete the message
+        cursor.execute('DELETE FROM messages WHERE id = %s', (message_id,))
+        db.commit()
+        cursor.close()
+        db.close()
+        
+        print(f"✅ Message {message_id} deleted successfully")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Message deleted successfully'
+        }), 200
+        
+    except Exception as e:
+        print(f"Error deleting message {message_id}:", str(e))
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/messages/bulk-delete', methods=['POST', 'OPTIONS'])
+def bulk_delete_messages():
+    """Delete multiple messages at once"""
+    
+    if request.method == 'OPTIONS':
+        return jsonify({'success': True}), 200
+    
+    data = request.json
+    
+    if not data or 'ids' not in data:
+        return jsonify({'success': False, 'message': 'No IDs provided'}), 400
+    
+    message_ids = data['ids']
+    
+    if not isinstance(message_ids, list) or len(message_ids) == 0:
+        return jsonify({'success': False, 'message': 'Invalid IDs format'}), 400
+    
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        
+        # Delete messages using ANY operator for array matching
+        cursor.execute(
+            'DELETE FROM messages WHERE id = ANY(%s)',
+            (message_ids,)
+        )
+        deleted_count = cursor.rowcount
+        db.commit()
+        cursor.close()
+        db.close()
+        
+        print(f"✅ Bulk deleted {deleted_count} messages")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully deleted {deleted_count} messages',
+            'deleted_count': deleted_count
+        }), 200
+        
+    except Exception as e:
+        print(f"Bulk delete messages error:", str(e))
         return jsonify({'success': False, 'message': str(e)}), 500
 
 # ========================================
@@ -418,19 +528,26 @@ def get_memories():
     
     try:
         db = get_db()
+        cursor = db.cursor()
         
         if memory_type == 'all':
-            query = 'SELECT * FROM memories ORDER BY created_at DESC LIMIT ? OFFSET ?'
-            params = (limit, offset)
+            cursor.execute(
+                'SELECT * FROM memories ORDER BY created_at DESC LIMIT %s OFFSET %s',
+                (limit, offset)
+            )
         else:
-            query = 'SELECT * FROM memories WHERE type = ? ORDER BY created_at DESC LIMIT ? OFFSET ?'
-            params = (memory_type, limit, offset)
+            cursor.execute(
+                'SELECT * FROM memories WHERE type = %s ORDER BY created_at DESC LIMIT %s OFFSET %s',
+                (memory_type, limit, offset)
+            )
         
-        memories = db.execute(query, params).fetchall()
+        memories = cursor.fetchall()
+        cursor.close()
+        db.close()
         
         return jsonify({
             'success': True,
-            'memories': [dict(mem) for mem in memories]
+            'memories': memories
         })
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
@@ -439,35 +556,27 @@ def get_memories():
 def submit_photo_memory():
     """Upload photo memories with size validation and compression"""
     
-    # Handle CORS preflight
     if request.method == 'OPTIONS':
         return jsonify({'success': True}), 200
     
-    # Validate files exist
     if 'photos[]' not in request.files:
-        return jsonify({
-            'success': False, 
-            'message': 'No photos provided'
-        }), 400
+        return jsonify({'success': False, 'message': 'No photos provided'}), 400
     
     name = request.form.get('name')
     caption = request.form.get('caption', '')
     
     if not name:
-        return jsonify({
-            'success': False, 
-            'message': 'Name is required'
-        }), 400
+        return jsonify({'success': False, 'message': 'Name is required'}), 400
     
     try:
         db = get_db()
+        cursor = db.cursor()
         files = request.files.getlist('photos[]')
         
         if not files or len(files) == 0:
-            return jsonify({
-                'success': False,
-                'message': 'No valid photos found'
-            }), 400
+            cursor.close()
+            db.close()
+            return jsonify({'success': False, 'message': 'No valid photos found'}), 400
         
         uploaded_count = 0
         total_size = 0
@@ -477,10 +586,10 @@ def submit_photo_memory():
             if not file or not file.filename:
                 continue
             
-            # Check file size BEFORE processing (5MB limit)
-            file.seek(0, 2)  # Seek to end
+            # Check file size (5MB limit)
+            file.seek(0, 2)
             file_size = file.tell()
-            file.seek(0)  # Reset to beginning
+            file.seek(0)
             
             if file_size > MAX_IMAGE_SIZE:
                 errors.append(f"{file.filename} exceeds 5MB limit")
@@ -494,30 +603,19 @@ def submit_photo_memory():
             try:
                 # Read file data
                 file_data = file.read()
-                file.seek(0)  # Reset for potential re-read
+                file.seek(0)
                 
                 # Upload to Cloudinary with compression
-                upload_result = upload_to_cloudinary_from_bytes(
-                    file_data, 
-                    'memories', 
-                    is_video=False
-                )
+                upload_result = upload_to_cloudinary_from_bytes(file_data, 'memories', is_video=False)
                 
                 if upload_result:
                     # Store in database
-                    db.execute(
+                    cursor.execute(
                         '''INSERT INTO memories 
                         (name, caption, image_url, cloudinary_id, type, storage_type, file_size) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?)''',
-                        (
-                            name, 
-                            caption, 
-                            upload_result['url'], 
-                            upload_result['public_id'], 
-                            'photo', 
-                            'cloudinary', 
-                            upload_result['size']
-                        )
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)''',
+                        (name, caption, upload_result['url'], upload_result['public_id'], 
+                         'photo', 'cloudinary', upload_result['size'])
                     )
                     uploaded_count += 1
                     total_size += upload_result['size']
@@ -529,8 +627,9 @@ def submit_photo_memory():
                 errors.append(f"Error with {file.filename}: {str(e)}")
         
         db.commit()
+        cursor.close()
+        db.close()
         
-        # Build response message
         if uploaded_count > 0:
             message = f'{uploaded_count} photo(s) uploaded successfully'
             if errors:
@@ -552,43 +651,33 @@ def submit_photo_memory():
             
     except Exception as e:
         print(f"Photo upload error: {str(e)}")
-        return jsonify({
-            'success': False, 
-            'message': f'Server error: {str(e)}'
-        }), 500
+        return jsonify({'success': False, 'message': f'Server error: {str(e)}'}), 500
 
 @app.route('/api/memories/videos', methods=['POST', 'OPTIONS'])
 def submit_video_memory():
     """Upload video memories with size validation"""
     
-    # Handle CORS preflight
     if request.method == 'OPTIONS':
         return jsonify({'success': True}), 200
     
     if 'videos[]' not in request.files:
-        return jsonify({
-            'success': False, 
-            'message': 'No videos provided'
-        }), 400
+        return jsonify({'success': False, 'message': 'No videos provided'}), 400
     
     name = request.form.get('name')
     caption = request.form.get('caption', '')
     
     if not name:
-        return jsonify({
-            'success': False, 
-            'message': 'Name is required'
-        }), 400
+        return jsonify({'success': False, 'message': 'Name is required'}), 400
     
     try:
         db = get_db()
+        cursor = db.cursor()
         files = request.files.getlist('videos[]')
         
         if not files or len(files) == 0:
-            return jsonify({
-                'success': False,
-                'message': 'No valid videos found'
-            }), 400
+            cursor.close()
+            db.close()
+            return jsonify({'success': False, 'message': 'No valid videos found'}), 400
         
         uploaded_count = 0
         errors = []
@@ -598,7 +687,7 @@ def submit_video_memory():
             if not file or not file.filename:
                 continue
             
-            # Check file size (50MB limit for Cloudinary free tier)
+            # Check file size (50MB limit)
             file.seek(0, 2)
             file_size = file.tell()
             file.seek(0)
@@ -627,11 +716,7 @@ def submit_video_memory():
                     file_data = file.read()
                     file.seek(0)
                     
-                    upload_result = upload_to_cloudinary_from_bytes(
-                        file_data, 
-                        'videos', 
-                        is_video=True
-                    )
+                    upload_result = upload_to_cloudinary_from_bytes(file_data, 'videos', is_video=True)
                     
                     if upload_result:
                         video_url = upload_result['url']
@@ -642,10 +727,10 @@ def submit_video_memory():
                         continue
                 
                 if video_url:
-                    db.execute(
+                    cursor.execute(
                         '''INSERT INTO memories 
                         (name, caption, image_url, cloudinary_id, type, storage_type, file_size) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?)''',
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)''',
                         (name, caption, video_url, public_id, 'video', storage_type, file_size)
                     )
                     uploaded_count += 1
@@ -655,6 +740,8 @@ def submit_video_memory():
                 errors.append(f"Error with {file.filename}: {str(e)}")
         
         db.commit()
+        cursor.close()
+        db.close()
         
         if uploaded_count > 0:
             message = f'{uploaded_count} video(s) uploaded successfully'
@@ -677,10 +764,7 @@ def submit_video_memory():
             
     except Exception as e:
         print(f"Video upload error: {str(e)}")
-        return jsonify({
-            'success': False, 
-            'message': f'Server error: {str(e)}'
-        }), 500
+        return jsonify({'success': False, 'message': f'Server error: {str(e)}'}), 500
 
 @app.route('/api/memories/text', methods=['POST'])
 def submit_text_memory():
@@ -691,16 +775,16 @@ def submit_text_memory():
     
     try:
         db = get_db()
-        db.execute(
-            'INSERT INTO memories (name, caption, image_url, type) VALUES (?, ?, ?, ?)',
+        cursor = db.cursor()
+        cursor.execute(
+            'INSERT INTO memories (name, caption, image_url, type) VALUES (%s, %s, %s, %s)',
             (data['name'], data['message'], '', 'text')
         )
         db.commit()
+        cursor.close()
+        db.close()
         
-        return jsonify({
-            'success': True,
-            'message': 'Memory submitted successfully'
-        })
+        return jsonify({'success': True, 'message': 'Memory submitted successfully'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
@@ -713,17 +797,151 @@ def submit_past_memory():
     
     try:
         db = get_db()
-        db.execute(
-            'INSERT INTO memories (name, caption, image_url, type) VALUES (?, ?, ?, ?)',
+        cursor = db.cursor()
+        cursor.execute(
+            'INSERT INTO memories (name, caption, image_url, type) VALUES (%s, %s, %s, %s)',
             (data.get('name') or 'Anonymous', data['message'], '', 'past')
         )
         db.commit()
+        cursor.close()
+        db.close()
+        
+        return jsonify({'success': True, 'message': 'Past memory submitted successfully'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/memories/<int:memory_id>', methods=['DELETE', 'OPTIONS'])
+def delete_memory(memory_id):
+    """Delete a specific memory (photo or video)"""
+    
+    if request.method == 'OPTIONS':
+        return jsonify({'success': True}), 200
+    
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        
+        # Check if memory exists
+        cursor.execute('SELECT * FROM memories WHERE id = %s', (memory_id,))
+        memory = cursor.fetchone()
+        
+        if not memory:
+            cursor.close()
+            db.close()
+            return jsonify({'success': False, 'message': 'Memory not found'}), 404
+        
+        # Delete from Cloudinary if it has a cloudinary_id
+        if memory['cloudinary_id']:
+            try:
+                resource_type = 'video' if memory['type'] == 'video' else 'image'
+                cloudinary.uploader.destroy(memory['cloudinary_id'], resource_type=resource_type)
+                print(f"✅ Deleted from Cloudinary: {memory['cloudinary_id']}")
+            except Exception as e:
+                print(f"⚠️ Cloudinary deletion warning: {e}")
+        
+        # Delete from local storage if it's stored locally
+        if memory['storage_type'] == 'local' and memory['image_url']:
+            try:
+                filename = memory['image_url'].split('/')[-1]
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+                    print(f"✅ Deleted local file: {filepath}")
+            except Exception as e:
+                print(f"⚠️ Local file deletion warning: {e}")
+        
+        # Delete from database
+        cursor.execute('DELETE FROM memories WHERE id = %s', (memory_id,))
+        db.commit()
+        cursor.close()
+        db.close()
+        
+        print(f"✅ Memory {memory_id} ({memory['type']}) deleted successfully")
         
         return jsonify({
             'success': True,
-            'message': 'Past memory submitted successfully'
-        })
+            'message': f"{memory['type'].capitalize()} deleted successfully"
+        }), 200
+        
     except Exception as e:
+        print(f"Error deleting memory {memory_id}:", str(e))
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/memories/bulk-delete', methods=['POST', 'OPTIONS'])
+def bulk_delete_memories():
+    """Delete multiple memories at once"""
+    
+    if request.method == 'OPTIONS':
+        return jsonify({'success': True}), 200
+    
+    data = request.json
+    
+    if not data or 'ids' not in data:
+        return jsonify({'success': False, 'message': 'No IDs provided'}), 400
+    
+    memory_ids = data['ids']
+    
+    if not isinstance(memory_ids, list) or len(memory_ids) == 0:
+        return jsonify({'success': False, 'message': 'Invalid IDs format'}), 400
+    
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        deleted_count = 0
+        errors = []
+        
+        for memory_id in memory_ids:
+            try:
+                # Get memory info
+                cursor.execute('SELECT * FROM memories WHERE id = %s', (memory_id,))
+                memory = cursor.fetchone()
+                
+                if not memory:
+                    errors.append(f"Memory {memory_id} not found")
+                    continue
+                
+                # Delete from Cloudinary
+                if memory['cloudinary_id']:
+                    try:
+                        resource_type = 'video' if memory['type'] == 'video' else 'image'
+                        cloudinary.uploader.destroy(memory['cloudinary_id'], resource_type=resource_type)
+                    except Exception as e:
+                        print(f"⚠️ Cloudinary deletion warning for {memory_id}: {e}")
+                
+                # Delete from local storage
+                if memory['storage_type'] == 'local' and memory['image_url']:
+                    try:
+                        filename = memory['image_url'].split('/')[-1]
+                        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                        if os.path.exists(filepath):
+                            os.remove(filepath)
+                    except Exception as e:
+                        print(f"⚠️ Local file deletion warning for {memory_id}: {e}")
+                
+                # Delete from database
+                cursor.execute('DELETE FROM memories WHERE id = %s', (memory_id,))
+                deleted_count += 1
+                
+            except Exception as e:
+                errors.append(f"Error deleting memory {memory_id}: {str(e)}")
+        
+        db.commit()
+        cursor.close()
+        db.close()
+        
+        message = f"Successfully deleted {deleted_count} of {len(memory_ids)} memories"
+        if errors:
+            message += f". Errors: {'; '.join(errors)}"
+        
+        return jsonify({
+            'success': True,
+            'message': message,
+            'deleted_count': deleted_count,
+            'errors': errors if errors else None
+        }), 200
+        
+    except Exception as e:
+        print(f"Bulk delete error:", str(e))
         return jsonify({'success': False, 'message': str(e)}), 500
 
 # ========================================
@@ -774,16 +992,17 @@ def create_payment_intent():
         )
         
         db = get_db()
-        db.execute(
-            'INSERT INTO donations (donor_name, donor_email, amount, charity_id, charity_name, message, stripe_payment_id, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            (data.get('donor_name'), data.get('donor_email'), amount, data.get('charity_id'), data.get('charity_name'), data.get('message'), session.id, 'pending')
+        cursor = db.cursor()
+        cursor.execute(
+            'INSERT INTO donations (donor_name, donor_email, amount, charity_id, charity_name, message, stripe_payment_id, status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)',
+            (data.get('donor_name'), data.get('donor_email'), amount, data.get('charity_id'), 
+             data.get('charity_name'), data.get('message'), session.id, 'pending')
         )
         db.commit()
+        cursor.close()
+        db.close()
         
-        return jsonify({
-            'success': True,
-            'checkout_url': session.url
-        })
+        return jsonify({'success': True, 'checkout_url': session.url})
     except Exception as e:
         print(f"Payment intent error: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
@@ -796,9 +1015,7 @@ def stripe_webhook():
     
     try:
         if STRIPE_WEBHOOK_SECRET:
-            event = stripe.Webhook.construct_event(
-                payload, sig_header, STRIPE_WEBHOOK_SECRET
-            )
+            event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
         else:
             event = json.loads(payload)
             print("⚠️ WARNING: Processing webhook without signature verification!")
@@ -809,13 +1026,17 @@ def stripe_webhook():
             session = event['data']['object']
             
             db = get_db()
-            result = db.execute(
-                "UPDATE donations SET status = 'completed' WHERE stripe_payment_id = ?",
+            cursor = db.cursor()
+            cursor.execute(
+                "UPDATE donations SET status = 'completed' WHERE stripe_payment_id = %s",
                 (session['id'],)
             )
+            affected = cursor.rowcount
             db.commit()
+            cursor.close()
+            db.close()
             
-            if result.rowcount > 0:
+            if affected > 0:
                 print(f"✅ Donation completed: {session['id']}")
             else:
                 print(f"⚠️ No donation found with ID: {session['id']}")
@@ -824,11 +1045,14 @@ def stripe_webhook():
             session = event['data']['object']
             
             db = get_db()
-            db.execute(
-                "UPDATE donations SET status = 'failed' WHERE stripe_payment_id = ?",
+            cursor = db.cursor()
+            cursor.execute(
+                "UPDATE donations SET status = 'failed' WHERE stripe_payment_id = %s",
                 (session['id'],)
             )
             db.commit()
+            cursor.close()
+            db.close()
             
             print(f"❌ Donation expired: {session['id']}")
         
@@ -862,23 +1086,21 @@ def cancel_reservation():
     
     try:
         db = get_db()
-        db.execute(
+        cursor = db.cursor()
+        cursor.execute(
             '''INSERT INTO cancellations 
             (first_name, last_name, email, phone, request_type, number_of_guests, reason, zoom_interest, future_updates) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-            (
-                data['firstName'], data['lastName'], data['email'], 
-                data.get('phone') or '', data['requestType'], 
-                data.get('numberOfGuests') or 0, data['reason'],
-                data.get('zoomInterest') or False, data.get('futureUpdates') or False
-            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)''',
+            (data['firstName'], data['lastName'], data['email'], 
+             data.get('phone') or '', data['requestType'], 
+             data.get('numberOfGuests') or 0, data['reason'],
+             data.get('zoomInterest') or False, data.get('futureUpdates') or False)
         )
         db.commit()
+        cursor.close()
+        db.close()
         
-        return jsonify({
-            'success': True,
-            'message': 'Cancellation request received'
-        })
+        return jsonify({'success': True, 'message': 'Cancellation request received'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
@@ -889,20 +1111,31 @@ def cancel_reservation():
 def get_stats():
     try:
         db = get_db()
+        cursor = db.cursor()
         
-        total_row = db.execute(
+        cursor.execute(
             "SELECT SUM(amount) as total FROM donations WHERE status = 'completed'"
-        ).fetchone()
+        )
+        total_row = cursor.fetchone()
         total_raised = total_row['total'] if total_row and total_row['total'] else 0
         
-        donor_row = db.execute(
+        cursor.execute(
             "SELECT COUNT(DISTINCT donor_email) as count FROM donations WHERE status = 'completed'"
-        ).fetchone()
+        )
+        donor_row = cursor.fetchone()
         donor_count = donor_row['count'] if donor_row else 0
         
-        photo_count = db.execute("SELECT COUNT(*) as count FROM memories WHERE type = 'photo'").fetchone()['count']
-        video_count = db.execute("SELECT COUNT(*) as count FROM memories WHERE type = 'video'").fetchone()['count']
-        message_count = db.execute("SELECT COUNT(*) as count FROM messages").fetchone()['count']
+        cursor.execute("SELECT COUNT(*) as count FROM memories WHERE type = 'photo'")
+        photo_count = cursor.fetchone()['count']
+        
+        cursor.execute("SELECT COUNT(*) as count FROM memories WHERE type = 'video'")
+        video_count = cursor.fetchone()['count']
+        
+        cursor.execute("SELECT COUNT(*) as count FROM messages")
+        message_count = cursor.fetchone()['count']
+        
+        cursor.close()
+        db.close()
         
         return jsonify({
             'success': True,
@@ -919,260 +1152,6 @@ def get_stats():
         print(f"Stats error: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
-
-@app.route('/api/messages/<int:message_id>', methods=['DELETE', 'OPTIONS'])
-def delete_message(message_id):
-    """Delete a specific message"""
-    
-    # Handle CORS preflight
-    if request.method == 'OPTIONS':
-        return jsonify({'success': True}), 200
-    
-    try:
-        db = get_db()
-        
-        # Check if message exists
-        message = db.execute(
-            'SELECT * FROM messages WHERE id = ?',
-            (message_id,)
-        ).fetchone()
-        
-        if not message:
-            return jsonify({
-                'success': False,
-                'message': 'Message not found'
-            }), 404
-        
-        # Delete the message
-        db.execute('DELETE FROM messages WHERE id = ?', (message_id,))
-        db.commit()
-        
-        print(f"✅ Message {message_id} deleted successfully")
-        
-        return jsonify({
-            'success': True,
-            'message': 'Message deleted successfully'
-        }), 200
-        
-    except Exception as e:
-        print(f"Error deleting message {message_id}:", str(e))
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
-
-
-@app.route('/api/memories/<int:memory_id>', methods=['DELETE', 'OPTIONS'])
-def delete_memory(memory_id):
-    """Delete a specific memory (photo or video)"""
-    
-    # Handle CORS preflight
-    if request.method == 'OPTIONS':
-        return jsonify({'success': True}), 200
-    
-    try:
-        db = get_db()
-        
-        # Check if memory exists
-        memory = db.execute(
-            'SELECT * FROM memories WHERE id = ?',
-            (memory_id,)
-        ).fetchone()
-        
-        if not memory:
-            return jsonify({
-                'success': False,
-                'message': 'Memory not found'
-            }), 404
-        
-        # Delete from Cloudinary if it has a cloudinary_id
-        if memory['cloudinary_id']:
-            try:
-                resource_type = 'video' if memory['type'] == 'video' else 'image'
-                cloudinary.uploader.destroy(
-                    memory['cloudinary_id'],
-                    resource_type=resource_type
-                )
-                print(f"✅ Deleted from Cloudinary: {memory['cloudinary_id']}")
-            except Exception as e:
-                print(f"⚠️ Cloudinary deletion warning: {e}")
-                # Continue with database deletion even if Cloudinary fails
-        
-        # Delete from local storage if it's stored locally
-        if memory['storage_type'] == 'local' and memory['image_url']:
-            try:
-                # Extract filename from URL
-                filename = memory['image_url'].split('/')[-1]
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                if os.path.exists(filepath):
-                    os.remove(filepath)
-                    print(f"✅ Deleted local file: {filepath}")
-            except Exception as e:
-                print(f"⚠️ Local file deletion warning: {e}")
-        
-        # Delete from database
-        db.execute('DELETE FROM memories WHERE id = ?', (memory_id,))
-        db.commit()
-        
-        print(f"✅ Memory {memory_id} ({memory['type']}) deleted successfully")
-        
-        return jsonify({
-            'success': True,
-            'message': f"{memory['type'].capitalize()} deleted successfully"
-        }), 200
-        
-    except Exception as e:
-        print(f"Error deleting memory {memory_id}:", str(e))
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
-
-
-@app.route('/api/memories/bulk-delete', methods=['POST', 'OPTIONS'])
-def bulk_delete_memories():
-    """Delete multiple memories at once"""
-    
-    # Handle CORS preflight
-    if request.method == 'OPTIONS':
-        return jsonify({'success': True}), 200
-    
-    data = request.json
-    
-    if not data or 'ids' not in data:
-        return jsonify({
-            'success': False,
-            'message': 'No IDs provided'
-        }), 400
-    
-    memory_ids = data['ids']
-    
-    if not isinstance(memory_ids, list) or len(memory_ids) == 0:
-        return jsonify({
-            'success': False,
-            'message': 'Invalid IDs format'
-        }), 400
-    
-    try:
-        db = get_db()
-        deleted_count = 0
-        errors = []
-        
-        for memory_id in memory_ids:
-            try:
-                # Get memory info
-                memory = db.execute(
-                    'SELECT * FROM memories WHERE id = ?',
-                    (memory_id,)
-                ).fetchone()
-                
-                if not memory:
-                    errors.append(f"Memory {memory_id} not found")
-                    continue
-                
-                # Delete from Cloudinary
-                if memory['cloudinary_id']:
-                    try:
-                        resource_type = 'video' if memory['type'] == 'video' else 'image'
-                        cloudinary.uploader.destroy(
-                            memory['cloudinary_id'],
-                            resource_type=resource_type
-                        )
-                    except Exception as e:
-                        print(f"⚠️ Cloudinary deletion warning for {memory_id}: {e}")
-                
-                # Delete from local storage
-                if memory['storage_type'] == 'local' and memory['image_url']:
-                    try:
-                        filename = memory['image_url'].split('/')[-1]
-                        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                        if os.path.exists(filepath):
-                            os.remove(filepath)
-                    except Exception as e:
-                        print(f"⚠️ Local file deletion warning for {memory_id}: {e}")
-                
-                # Delete from database
-                db.execute('DELETE FROM memories WHERE id = ?', (memory_id,))
-                deleted_count += 1
-                
-            except Exception as e:
-                errors.append(f"Error deleting memory {memory_id}: {str(e)}")
-        
-        db.commit()
-        
-        message = f"Successfully deleted {deleted_count} of {len(memory_ids)} memories"
-        if errors:
-            message += f". Errors: {'; '.join(errors)}"
-        
-        return jsonify({
-            'success': True,
-            'message': message,
-            'deleted_count': deleted_count,
-            'errors': errors if errors else None
-        }), 200
-        
-    except Exception as e:
-        print(f"Bulk delete error:", str(e))
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
-
-
-@app.route('/api/messages/bulk-delete', methods=['POST', 'OPTIONS'])
-def bulk_delete_messages():
-    """Delete multiple messages at once"""
-    
-    # Handle CORS preflight
-    if request.method == 'OPTIONS':
-        return jsonify({'success': True}), 200
-    
-    data = request.json
-    
-    if not data or 'ids' not in data:
-        return jsonify({
-            'success': False,
-            'message': 'No IDs provided'
-        }), 400
-    
-    message_ids = data['ids']
-    
-    if not isinstance(message_ids, list) or len(message_ids) == 0:
-        return jsonify({
-            'success': False,
-            'message': 'Invalid IDs format'
-        }), 400
-    
-    try:
-        db = get_db()
-        
-        # Create placeholders for SQL query
-        placeholders = ','.join('?' * len(message_ids))
-        
-        # Delete messages
-        result = db.execute(
-            f'DELETE FROM messages WHERE id IN ({placeholders})',
-            message_ids
-        )
-        db.commit()
-        
-        deleted_count = result.rowcount
-        
-        print(f"✅ Bulk deleted {deleted_count} messages")
-        
-        return jsonify({
-            'success': True,
-            'message': f'Successfully deleted {deleted_count} messages',
-            'deleted_count': deleted_count
-        }), 200
-        
-    except Exception as e:
-        print(f"Bulk delete messages error:", str(e))
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
-
 # ========================================
 # HEALTH CHECK
 # ========================================
@@ -1180,7 +1159,11 @@ def bulk_delete_messages():
 def health_check():
     try:
         db = get_db()
-        db.execute('SELECT 1').fetchone()
+        cursor = db.cursor()
+        cursor.execute('SELECT 1')
+        cursor.fetchone()
+        cursor.close()
+        db.close()
         db_status = 'healthy'
     except Exception as e:
         db_status = f'error: {str(e)}'
@@ -1189,6 +1172,7 @@ def health_check():
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
         'database': db_status,
+        'database_type': 'PostgreSQL',
         'storage': {
             'cloudinary': 'enabled',
             'local_videos': USE_LOCAL_VIDEO_STORAGE
