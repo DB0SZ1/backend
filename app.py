@@ -1087,7 +1087,7 @@ def get_stats():
 # ========================================
 # GOOGLE DRIVE CONFIGURATION
 # ========================================
-DRIVE_FOLDER_ID = '1F4qa0G07v7uTF-P95kdWRilG8k2anknm'
+DRIVE_FOLDER_ID = '1I0ulGY8KOYu8jZrync2BHAdYV3MevyRW'
 DRIVE_API_KEY = os.getenv('GOOGLE_DRIVE_API_KEY')
 
 def get_drive_folder_structure(folder_id):
