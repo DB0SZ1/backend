@@ -919,6 +919,260 @@ def get_stats():
         print(f"Stats error: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
+
+@app.route('/api/messages/<int:message_id>', methods=['DELETE', 'OPTIONS'])
+def delete_message(message_id):
+    """Delete a specific message"""
+    
+    # Handle CORS preflight
+    if request.method == 'OPTIONS':
+        return jsonify({'success': True}), 200
+    
+    try:
+        db = get_db()
+        
+        # Check if message exists
+        message = db.execute(
+            'SELECT * FROM messages WHERE id = ?',
+            (message_id,)
+        ).fetchone()
+        
+        if not message:
+            return jsonify({
+                'success': False,
+                'message': 'Message not found'
+            }), 404
+        
+        # Delete the message
+        db.execute('DELETE FROM messages WHERE id = ?', (message_id,))
+        db.commit()
+        
+        print(f"✅ Message {message_id} deleted successfully")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Message deleted successfully'
+        }), 200
+        
+    except Exception as e:
+        print(f"Error deleting message {message_id}:", str(e))
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/memories/<int:memory_id>', methods=['DELETE', 'OPTIONS'])
+def delete_memory(memory_id):
+    """Delete a specific memory (photo or video)"""
+    
+    # Handle CORS preflight
+    if request.method == 'OPTIONS':
+        return jsonify({'success': True}), 200
+    
+    try:
+        db = get_db()
+        
+        # Check if memory exists
+        memory = db.execute(
+            'SELECT * FROM memories WHERE id = ?',
+            (memory_id,)
+        ).fetchone()
+        
+        if not memory:
+            return jsonify({
+                'success': False,
+                'message': 'Memory not found'
+            }), 404
+        
+        # Delete from Cloudinary if it has a cloudinary_id
+        if memory['cloudinary_id']:
+            try:
+                resource_type = 'video' if memory['type'] == 'video' else 'image'
+                cloudinary.uploader.destroy(
+                    memory['cloudinary_id'],
+                    resource_type=resource_type
+                )
+                print(f"✅ Deleted from Cloudinary: {memory['cloudinary_id']}")
+            except Exception as e:
+                print(f"⚠️ Cloudinary deletion warning: {e}")
+                # Continue with database deletion even if Cloudinary fails
+        
+        # Delete from local storage if it's stored locally
+        if memory['storage_type'] == 'local' and memory['image_url']:
+            try:
+                # Extract filename from URL
+                filename = memory['image_url'].split('/')[-1]
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+                    print(f"✅ Deleted local file: {filepath}")
+            except Exception as e:
+                print(f"⚠️ Local file deletion warning: {e}")
+        
+        # Delete from database
+        db.execute('DELETE FROM memories WHERE id = ?', (memory_id,))
+        db.commit()
+        
+        print(f"✅ Memory {memory_id} ({memory['type']}) deleted successfully")
+        
+        return jsonify({
+            'success': True,
+            'message': f"{memory['type'].capitalize()} deleted successfully"
+        }), 200
+        
+    except Exception as e:
+        print(f"Error deleting memory {memory_id}:", str(e))
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/memories/bulk-delete', methods=['POST', 'OPTIONS'])
+def bulk_delete_memories():
+    """Delete multiple memories at once"""
+    
+    # Handle CORS preflight
+    if request.method == 'OPTIONS':
+        return jsonify({'success': True}), 200
+    
+    data = request.json
+    
+    if not data or 'ids' not in data:
+        return jsonify({
+            'success': False,
+            'message': 'No IDs provided'
+        }), 400
+    
+    memory_ids = data['ids']
+    
+    if not isinstance(memory_ids, list) or len(memory_ids) == 0:
+        return jsonify({
+            'success': False,
+            'message': 'Invalid IDs format'
+        }), 400
+    
+    try:
+        db = get_db()
+        deleted_count = 0
+        errors = []
+        
+        for memory_id in memory_ids:
+            try:
+                # Get memory info
+                memory = db.execute(
+                    'SELECT * FROM memories WHERE id = ?',
+                    (memory_id,)
+                ).fetchone()
+                
+                if not memory:
+                    errors.append(f"Memory {memory_id} not found")
+                    continue
+                
+                # Delete from Cloudinary
+                if memory['cloudinary_id']:
+                    try:
+                        resource_type = 'video' if memory['type'] == 'video' else 'image'
+                        cloudinary.uploader.destroy(
+                            memory['cloudinary_id'],
+                            resource_type=resource_type
+                        )
+                    except Exception as e:
+                        print(f"⚠️ Cloudinary deletion warning for {memory_id}: {e}")
+                
+                # Delete from local storage
+                if memory['storage_type'] == 'local' and memory['image_url']:
+                    try:
+                        filename = memory['image_url'].split('/')[-1]
+                        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                        if os.path.exists(filepath):
+                            os.remove(filepath)
+                    except Exception as e:
+                        print(f"⚠️ Local file deletion warning for {memory_id}: {e}")
+                
+                # Delete from database
+                db.execute('DELETE FROM memories WHERE id = ?', (memory_id,))
+                deleted_count += 1
+                
+            except Exception as e:
+                errors.append(f"Error deleting memory {memory_id}: {str(e)}")
+        
+        db.commit()
+        
+        message = f"Successfully deleted {deleted_count} of {len(memory_ids)} memories"
+        if errors:
+            message += f". Errors: {'; '.join(errors)}"
+        
+        return jsonify({
+            'success': True,
+            'message': message,
+            'deleted_count': deleted_count,
+            'errors': errors if errors else None
+        }), 200
+        
+    except Exception as e:
+        print(f"Bulk delete error:", str(e))
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/messages/bulk-delete', methods=['POST', 'OPTIONS'])
+def bulk_delete_messages():
+    """Delete multiple messages at once"""
+    
+    # Handle CORS preflight
+    if request.method == 'OPTIONS':
+        return jsonify({'success': True}), 200
+    
+    data = request.json
+    
+    if not data or 'ids' not in data:
+        return jsonify({
+            'success': False,
+            'message': 'No IDs provided'
+        }), 400
+    
+    message_ids = data['ids']
+    
+    if not isinstance(message_ids, list) or len(message_ids) == 0:
+        return jsonify({
+            'success': False,
+            'message': 'Invalid IDs format'
+        }), 400
+    
+    try:
+        db = get_db()
+        
+        # Create placeholders for SQL query
+        placeholders = ','.join('?' * len(message_ids))
+        
+        # Delete messages
+        result = db.execute(
+            f'DELETE FROM messages WHERE id IN ({placeholders})',
+            message_ids
+        )
+        db.commit()
+        
+        deleted_count = result.rowcount
+        
+        print(f"✅ Bulk deleted {deleted_count} messages")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully deleted {deleted_count} messages',
+            'deleted_count': deleted_count
+        }), 200
+        
+    except Exception as e:
+        print(f"Bulk delete messages error:", str(e))
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
 # ========================================
 # HEALTH CHECK
 # ========================================
