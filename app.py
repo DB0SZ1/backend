@@ -60,9 +60,27 @@ cloudinary.config(
 # DATABASE SETUP - POSTGRESQL
 # ========================================
 def get_db():
-    """Connect to PostgreSQL database using DATABASE_URL from Railway"""
+    """Connect to PostgreSQL using parsed DATABASE_URL"""
+    db_url = os.getenv('DATABASE_URL')
+    if not db_url:
+        raise ValueError("DATABASE_URL environment variable is not set")
+
+    # Parse URL
+    parsed = urlparse(db_url)
+    if parsed.scheme not in ('postgres', 'postgresql'):
+        raise ValueError(f"Invalid database URL scheme: {parsed.scheme}")
+
+    # Extract query parameters
+    query = parse_qs(parsed.query)
+    sslmode = query.get('sslmode', ['prefer'])[0]
+
     conn = psycopg2.connect(
-        os.getenv('DATABASE_URL'),
+        host=parsed.hostname,
+        port=parsed.port or 5432,
+        database=parsed.path.lstrip('/'),
+        user=parsed.username,
+        password=parsed.password,
+        sslmode=sslmode,
         cursor_factory=RealDictCursor
     )
     return conn
@@ -1466,11 +1484,10 @@ def health_check():
 # ========================================
 # INITIALIZATION WITH AUTO-MIGRATION
 # ========================================
+# Development entry point (not used on Railway)
 if __name__ == '__main__':
-    init_db()
-    run_migrations()
     port = int(os.getenv('PORT', 5000))
-    app.run(debug=os.getenv('DEBUG', 'False') == 'True', host='0.0.0.0', port=port)
+    app.run(debug=True, host='0.0.0.0', port=port)
 
 # Initialize database and run migrations when running on Railway
 if os.getenv('RAILWAY_ENVIRONMENT'):
