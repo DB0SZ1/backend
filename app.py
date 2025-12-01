@@ -18,6 +18,8 @@ import io
 import json
 import requests
 from urllib.parse import urlparse, parse_qs
+from keep_alive import BackendKeepAlive
+from backup_restoration import auto_restore_backup_on_init
 
 app = Flask(__name__)
 CORS(app, resources={
@@ -28,6 +30,22 @@ CORS(app, resources={
         "supports_credentials": False
     }
 })
+
+# ========================================
+# KEEP-ALIVE SYSTEM INITIALIZATION
+# ========================================
+keep_alive = BackendKeepAlive(
+    backend_url=os.getenv('BACKEND_URL', 'http://localhost:5000'),
+    primary_interval=25 * 60,  # 25 minutes
+    secondary_interval=15 * 60,  # 15 minutes
+    health_check_interval=2 * 60,  # 2 minutes
+    request_timeout=10,
+    max_retries=3,
+    failure_threshold=5,
+    verbose=os.getenv('KEEP_ALIVE_VERBOSE', 'true').lower() == 'true',
+    webhook_url=os.getenv('KEEP_ALIVE_WEBHOOK_URL'),  # Optional Discord/Slack webhook
+)
+app.keep_alive = keep_alive
 
 # ========================================
 # CONFIGURATION
@@ -1341,15 +1359,136 @@ def health_check():
     })
 
 # ========================================
+# KEEP-ALIVE STATUS ENDPOINT
+# ========================================
+@app.route('/api/keep-alive/status', methods=['GET'])
+def get_keep_alive_status():
+    """Get the status of the keep-alive system"""
+    status = keep_alive.get_status()
+    return jsonify({
+        'success': True,
+        'keep_alive': status
+    })
+
+# ========================================
+# BACKUP RESTORATION ENDPOINTS
+# ========================================
+@app.route('/api/backup/status', methods=['GET'])
+def get_backup_status():
+    """Get the status of backup restoration"""
+    status = app.backup_restoration.get_status()
+    return jsonify({
+        'success': True,
+        'backup': status
+    })
+
+@app.route('/api/backup/restore', methods=['POST'])
+def restore_backup():
+    """
+    Manually trigger backup restoration.
+    WARNING: This will clear existing data and restore from backup.sql
+    """
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        
+        # Clear existing data
+        cursor.execute('DELETE FROM messages')
+        cursor.execute('DELETE FROM memories')
+        db.commit()
+        cursor.close()
+        db.close()
+        
+        # Restore from backup
+        db = get_db()
+        success = app.backup_restoration.restore(db)
+        db.close()
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Backup restored successfully',
+                'status': app.backup_restoration.get_status()
+            }), 200
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Failed to restore backup'
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error restoring backup: {str(e)}'
+        }), 500
+
+@app.route('/api/backup/create', methods=['POST'])
+def create_backup():
+    """
+    Create a new backup of current database state.
+    Saves as backup_TIMESTAMP.sql in the root directory.
+    """
+    try:
+        db = get_db()
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        backup_file = f'backup_{timestamp}.sql'
+        
+        success = app.backup_restoration.create_backup(db, backup_file)
+        db.close()
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Backup created successfully',
+                'backup_file': backup_file,
+                'timestamp': datetime.now().isoformat()
+            }), 200
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Failed to create backup'
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error creating backup: {str(e)}'
+        }), 500
+
+# ========================================
 # INITIALIZATION WITH AUTO-MIGRATION
 # ========================================
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
     init_db()
     run_migrations()
-    app.run(debug=True, host='0.0.0.0', port=port)
+    
+    # Auto-restore backup if database is empty
+    backup_restoration = auto_restore_backup_on_init(
+        db_path=DATABASE_PATH,
+        backup_path='backup.sql'
+    )
+    app.backup_restoration = backup_restoration
+    
+    # Start keep-alive system
+    keep_alive.start()
+    
+    try:
+        app.run(debug=True, host='0.0.0.0', port=port)
+    finally:
+        keep_alive.stop()
 
 # Auto-init on import (e.g., Railway, Render, etc.)
 init_db()
 run_migrations()
 print("SQLite database initialized and migrated")
+
+# Auto-restore backup if database is empty on import
+backup_restoration = auto_restore_backup_on_init(
+    db_path=DATABASE_PATH,
+    backup_path='backup.sql'
+)
+app.backup_restoration = backup_restoration
+
+# Start keep-alive system on import
+keep_alive.start()

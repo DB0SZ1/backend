@@ -7,3 +7,4 @@ python-dotenv
 Werkzeug
 Pillow
 psycopg2
+requests
