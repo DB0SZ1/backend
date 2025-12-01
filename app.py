@@ -35,7 +35,7 @@ CORS(app, resources={
 # KEEP-ALIVE SYSTEM INITIALIZATION
 # ========================================
 keep_alive = BackendKeepAlive(
-    backend_url=os.getenv('BACKEND_URL', 'http://localhost:5000'),
+    backend_url=os.getenv('BACKEND_URL', os.getenv('RENDER_EXTERNAL_URL', 'http://localhost:5000')),
     primary_interval=25 * 60,  # 25 minutes
     secondary_interval=15 * 60,  # 15 minutes
     health_check_interval=2 * 60,  # 2 minutes
@@ -1470,8 +1470,8 @@ if __name__ == '__main__':
     )
     app.backup_restoration = backup_restoration
     
-    # Start keep-alive system
-    keep_alive.start()
+    # Start keep-alive system with 15 second delay to allow server to initialize
+    keep_alive.start(delay_startup_ping=15)
     
     try:
         app.run(debug=True, host='0.0.0.0', port=port)
@@ -1490,5 +1490,5 @@ backup_restoration = auto_restore_backup_on_init(
 )
 app.backup_restoration = backup_restoration
 
-# Start keep-alive system on import
-keep_alive.start()
+# Start keep-alive system on import with 20 second delay (Gunicorn/production deployment)
+keep_alive.start(delay_startup_ping=20)

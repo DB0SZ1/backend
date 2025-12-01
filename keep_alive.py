@@ -95,9 +95,12 @@ class BackendKeepAlive:
                 os.getenv('BACKEND_URL', 'http://localhost:5000')
             )
 
-    def start(self):
+    def start(self, delay_startup_ping: int = 10):
         """
         Start the keep-alive system with all background threads.
+        
+        Args:
+            delay_startup_ping: Seconds to wait before first ping (allows server to initialize)
         """
         if self.is_active:
             self.log('⚠️  Keep-alive system already running', 'warning')
@@ -121,8 +124,13 @@ class BackendKeepAlive:
         self._start_secondary_keep_alive()
         self._start_health_monitoring()
 
-        # Perform initial ping
-        self._ping('startup', 0)
+        # Perform initial ping after server is ready
+        self.log(f'⏳ Waiting {delay_startup_ping}s for server to fully initialize before first ping...', 'debug')
+        threading.Timer(
+            delay_startup_ping,
+            self._ping,
+            args=('startup', 0)
+        ).start()
 
     def _start_primary_keep_alive(self):
         """Start the primary keep-alive thread (25-minute interval)."""
@@ -222,13 +230,21 @@ class BackendKeepAlive:
             return True
 
         except Exception as error:
-            with self.lock:
-                self.failure_count += 1
-
-            self.log(
-                f'❌ {ping_type} ping failed ({self.failure_count}/{self.failure_threshold}): {str(error)}',
-                'error'
-            )
+            # During startup, don't increment failure count as aggressively
+            if ping_type != 'startup':
+                with self.lock:
+                    self.failure_count += 1
+                
+                self.log(
+                    f'❌ {ping_type} ping failed ({self.failure_count}/{self.failure_threshold}): {str(error)}',
+                    'error'
+                )
+            else:
+                # Startup failures are logged at debug level
+                self.log(
+                    f'⚠️  startup ping not ready yet (attempt {retry_count + 1}/{self.max_retries + 1}): {str(error)}',
+                    'debug'
+                )
 
             # Retry logic with exponential backoff
             if retry_count < self.max_retries:
@@ -236,21 +252,33 @@ class BackendKeepAlive:
                     5 * (2 ** retry_count),  # 5s, 10s, 20s, etc.
                     60  # Max 60 seconds
                 )
-                self.log(
-                    f'🔄 Retrying in {backoff_delay} seconds... '
-                    f'(retry {retry_count + 1}/{self.max_retries})',
-                    'warning'
-                )
+                
+                if ping_type == 'startup':
+                    self.log(
+                        f'🔄 Retrying startup ping in {backoff_delay} seconds... '
+                        f'(retry {retry_count + 1}/{self.max_retries})',
+                        'debug'
+                    )
+                else:
+                    self.log(
+                        f'🔄 Retrying in {backoff_delay} seconds... '
+                        f'(retry {retry_count + 1}/{self.max_retries})',
+                        'warning'
+                    )
+                
                 threading.Timer(
                     backoff_delay,
                     self._ping,
                     args=(ping_type, retry_count + 1)
                 ).start()
             else:
-                self.log(f'💥 All retry attempts exhausted for {ping_type} ping', 'error')
+                if ping_type != 'startup':
+                    self.log(f'💥 All retry attempts exhausted for {ping_type} ping', 'error')
+                else:
+                    self.log(f'ℹ️  Startup ping initialization failed, will retry during regular intervals', 'info')
 
-            # Alert if failure threshold exceeded
-            if self.failure_count >= self.failure_threshold:
+            # Alert if failure threshold exceeded (only for non-startup pings)
+            if ping_type != 'startup' and self.failure_count >= self.failure_threshold:
                 self._handle_critical_failure()
 
             return False
