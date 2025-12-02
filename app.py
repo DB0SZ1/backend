@@ -34,11 +34,17 @@ CORS(app, resources={
 # ========================================
 # KEEP-ALIVE SYSTEM INITIALIZATION
 # ========================================
+backend_url = (
+    os.getenv('RENDER_EXTERNAL_URL') or  # Render's automatic variable
+    os.getenv('BACKEND_URL') or           # Custom fallback
+    'http://localhost:5000'                # Local development
+)
+
 keep_alive = BackendKeepAlive(
-    backend_url=os.getenv('BACKEND_URL', os.getenv('RENDER_EXTERNAL_URL', 'http://localhost:5000')),
-    primary_interval=25 * 60,  # 25 minutes
-    secondary_interval=15 * 60,  # 15 minutes
-    health_check_interval=2 * 60,  # 2 minutes
+    backend_url=backend_url,
+    primary_interval=13 * 60,      # 13 minutes (Render sleeps after 15 min inactivity)
+    secondary_interval=8 * 60,      # 8 minutes (backup interval)
+    health_check_interval=5 * 60,   # 5 minutes
     request_timeout=10,
     max_retries=3,
     failure_threshold=5,

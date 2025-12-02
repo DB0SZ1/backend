@@ -9,6 +9,7 @@ This runs as a background thread and doesn't rely on external services.
 import threading
 import time
 import logging
+import os
 from datetime import datetime
 from typing import Optional, Dict, Any
 import requests
@@ -32,9 +33,9 @@ class BackendKeepAlive:
         self,
         app=None,
         backend_url: Optional[str] = None,
-        primary_interval: int = 25 * 60,  # 25 minutes in seconds
-        secondary_interval: int = 15 * 60,  # 15 minutes in seconds
-        health_check_interval: int = 2 * 60,  # 2 minutes in seconds
+        primary_interval: int = 13 * 60,  # 13 minutes (Render sleeps after 15 min inactivity)
+        secondary_interval: int = 8 * 60,  # 8 minutes (backup interval)
+        health_check_interval: int = 5 * 60,  # 5 minutes
         request_timeout: int = 10,  # 10 seconds
         max_retries: int = 3,
         failure_threshold: int = 5,
@@ -46,10 +47,10 @@ class BackendKeepAlive:
 
         Args:
             app: Flask application instance (optional, can call init_app later)
-            backend_url: The base URL of the backend (e.g., http://localhost:5000)
-            primary_interval: Primary ping interval in seconds (default 25 min)
-            secondary_interval: Secondary ping interval in seconds (default 15 min)
-            health_check_interval: Health check interval in seconds (default 2 min)
+            backend_url: The base URL of the backend (auto-detected from Render env)
+            primary_interval: Primary ping interval in seconds (default 13 min)
+            secondary_interval: Secondary ping interval in seconds (default 8 min)
+            health_check_interval: Health check interval in seconds (default 5 min)
             request_timeout: Request timeout in seconds (default 10)
             max_retries: Maximum retry attempts for failed requests (default 3)
             failure_threshold: Consecutive failures before alert (default 5)
@@ -88,14 +89,18 @@ class BackendKeepAlive:
         """
         self.app = app
         
-        # Get backend URL from config or environment
+        # Get backend URL from Render environment or config
         if not self.backend_url:
-            self.backend_url = app.config.get(
-                'BACKEND_URL',
-                os.getenv('BACKEND_URL', 'http://localhost:5000')
+            # Render sets RENDER_EXTERNAL_URL automatically
+            self.backend_url = (
+                os.getenv('RENDER_EXTERNAL_URL') or 
+                os.getenv('BACKEND_URL') or
+                app.config.get('BACKEND_URL', 'http://localhost:5000')
             )
+        
+        self.log(f'🔗 Backend URL configured: {self.backend_url}', 'info')
 
-    def start(self, delay_startup_ping: int = 10):
+    def start(self, delay_startup_ping: int = 15):
         """
         Start the keep-alive system with all background threads.
         
@@ -113,8 +118,8 @@ class BackendKeepAlive:
             self.failure_count = 0
             self.request_count = 0
 
-        self.log('🚀 Starting Backend Keep-Alive System', 'info')
-        self.log(f'📍 Backend URL: {self.backend_url}', 'info')
+        self.log('🚀 Starting Backend Keep-Alive System for Render', 'info')
+        self.log(f'🔗 Backend URL: {self.backend_url}', 'info')
         self.log(f'⏱️  Primary interval: {self.primary_interval // 60} minutes', 'info')
         self.log(f'⏱️  Secondary interval: {self.secondary_interval // 60} minutes', 'info')
         self.log(f'⏱️  Health check interval: {self.health_check_interval // 60} minutes', 'info')
@@ -133,7 +138,7 @@ class BackendKeepAlive:
         ).start()
 
     def _start_primary_keep_alive(self):
-        """Start the primary keep-alive thread (25-minute interval)."""
+        """Start the primary keep-alive thread (13-minute interval for Render)."""
         thread = threading.Thread(
             target=self._keep_alive_loop,
             args=(self.primary_interval, 'primary'),
@@ -145,7 +150,7 @@ class BackendKeepAlive:
         self.log('✅ Primary keep-alive thread started', 'debug')
 
     def _start_secondary_keep_alive(self):
-        """Start the secondary keep-alive thread (15-minute interval)."""
+        """Start the secondary keep-alive thread (8-minute interval)."""
         thread = threading.Thread(
             target=self._keep_alive_loop,
             args=(self.secondary_interval, 'secondary'),
@@ -157,7 +162,7 @@ class BackendKeepAlive:
         self.log('✅ Secondary keep-alive thread started', 'debug')
 
     def _start_health_monitoring(self):
-        """Start the health monitoring thread (2-minute interval)."""
+        """Start the health monitoring thread (5-minute interval)."""
         thread = threading.Thread(
             target=self._keep_alive_loop,
             args=(self.health_check_interval, 'health'),
@@ -338,7 +343,7 @@ class BackendKeepAlive:
         try:
             headers = {
                 'Content-Type': 'application/json',
-                'User-Agent': 'BackendKeepAlive/1.0',
+                'User-Agent': 'BackendKeepAlive/2.0-Render',
             }
 
             response = requests.request(
@@ -477,7 +482,7 @@ def require_keep_alive_active(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         # This assumes 'keep_alive' is available in the Flask app context
-        from flask import current_app
+        from flask import current_app, jsonify
         
         if hasattr(current_app, 'keep_alive') and not current_app.keep_alive.is_active:
             return jsonify({'error': 'Keep-alive system not active'}), 503
