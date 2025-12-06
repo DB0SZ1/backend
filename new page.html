@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Charity Updates - Hector-Goma Celebration</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Cinzel:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            color: #333;
+            line-height: 1.6;
+            background: #f5e6d3;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Cinzel', serif;
+        }
+
+        /* Navigation */
+        nav {
+            background: #5b0202;
+            padding: 1rem 10%;
+            position: fixed;
+            width: 90%;
+            left: 5%;
+            top: 15px;
+            z-index: 1000;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            flex-wrap: wrap;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        nav a:hover {
+            color: #f5e6d3;
+        }
+
+        .menu-toggle {
+            display: none;
+            background: transparent;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            position: absolute;
+            right: 2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.5rem;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 60vh;
+            background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), 
+                        url('/wp-content/themes/wedding-planner-firm/templates/images/hero-couple.jpg');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+            padding: 120px 5% 3rem 5%;
+        }
+
+        .hero-content {
+            max-width: 800px;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            font-weight: 500;
+            letter-spacing: 1px;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.95;
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 3rem 5%;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Pill Tabs */
+        .pill-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 3rem;
+            overflow-x: auto;
+            padding: 1rem 0;
+            scrollbar-width: thin;
+            scrollbar-color: #8b4513 #f5e6d3;
+        }
+
+        .pill-tabs::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .pill-tabs::-webkit-scrollbar-track {
+            background: #f5e6d3;
+            border-radius: 10px;
+        }
+
+        .pill-tabs::-webkit-scrollbar-thumb {
+            background: #8b4513;
+            border-radius: 10px;
+        }
+
+        .pill-tab {
+            background: white;
+            color: #4a2c2a;
+            padding: 1rem 2rem;
+            border: 2px solid #8b4513;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .pill-tab i {
+            font-size: 1.1rem;
+        }
+
+        .pill-tab:hover {
+            background: #f5e6d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .pill-tab.active {
+            background: #8b4513;
+            color: white;
+            box-shadow: 0 5px 20px rgba(139, 69, 19, 0.4);
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Content Cards */
+        .content-card {
+            background: white;
+            padding: 3rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .content-card h2 {
+            color: #4a2c2a;
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 3px solid #8b4513;
+            padding-bottom: 1rem;
+        }
+
+        .content-card h3 {
+            color: #4a2c2a;
+            font-size: 1.8rem;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .content-card p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 1rem;
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #8b4513;
+        }
+
+        .loading i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Gallery Grid */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .gallery-item {
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transition: transform 0.3s;
+            cursor: pointer;
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.05);
+        }
+
+        .gallery-item img,
+        .gallery-item video {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .gallery-item .play-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(139, 69, 19, 0.9);
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        /* Messages Grid */
+        .messages-grid {
+            display: grid;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .message-card {
+            background: #f5e6d3;
+            padding: 2rem;
+            border-radius: 10px;
+            border-left: 5px solid #8b4513;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .message-card .author {
+            font-weight: 600;
+            color: #4a2c2a;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .message-card .message-text {
+            font-style: italic;
+            color: #555;
+            line-height: 1.7;
+        }
+
+        .message-card .date {
+            font-size: 0.9rem;
+            color: #888;
+            margin-top: 0.5rem;
+        }
+
+        /* Video Container */
+        .video-container {
+            margin-top: 2rem;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .video-container iframe,
+        .video-container video {
+            width: 100%;
+            height: 500px;
+            border: none;
+        }
+
+        /* Brochure Section */
+        .brochure-preview {
+            margin-top: 2rem;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            background: white;
+        }
+
+        .brochure-preview iframe {
+            width: 100%;
+            height: 800px;
+            border: none;
+        }
+
+        .btn {
+            background: #8b4513;
+            color: white;
+            padding: 1rem 2.5rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-top: 1.5rem;
+            transition: all 0.3s;
+            font-size: 1.1rem;
+            font-weight: 500;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn:hover {
+            background: #6d3410;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+
+        /* Footer */
+        footer {
+            background: #4a2c2a;
+            color: white;
+            text-align: center;
+            padding: 2rem;
+            margin-top: 3rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 968px) {
+            nav {
+                width: 95%;
+                left: 2.5%;
+                padding: 1rem 2rem;
+            }
+
+            nav ul {
+                flex-direction: column;
+                gap: 1rem;
+                display: none;
+                background: #5b0202;
+                padding: 1rem 0;
+                border-radius: 20px;
+                margin-top: 1rem;
+            }
+
+            nav ul.active {
+                display: flex;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .hero p {
+                font-size: 1rem;
+            }
+
+            .pill-tabs {
+                flex-wrap: nowrap;
+                justify-content: flex-start;
+            }
+
+            .content-card {
+                padding: 2rem 1.5rem;
+            }
+
+            .content-card h2 {
+                font-size: 2rem;
+            }
+
+            .gallery-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 1rem;
+            }
+
+            .gallery-item img,
+            .gallery-item video {
+                height: 200px;
+            }
+
+            .video-container iframe,
+            .video-container video {
+                height: 300px;
+            }
+
+            .brochure-preview iframe {
+                height: 600px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero h1 {
+                font-size: 1.5rem;
+            }
+
+            .pill-tab {
+                padding: 0.8rem 1.5rem;
+                font-size: 0.9rem;
+            }
+
+            .content-card {
+                padding: 1.5rem 1rem;
+            }
+
+            .content-card h2 {
+                font-size: 1.6rem;
+            }
+
+            .gallery-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .video-container iframe,
+            .video-container video {
+                height: 250px;
+            }
+
+            .brochure-preview iframe {
+                height: 500px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <button class="menu-toggle" onclick="toggleMenu()"><i class="fas fa-bars"></i></button>
+        <ul id="navMenu">
+            <li><a href="/wp-content/themes/wedding-planner-firm/templates/front-page.html">Home</a></li>
+            <li><a href="/wp-content/themes/wedding-planner-firm/templates/story.html">Our Story</a></li>
+            <li><a href="/wp-content/themes/wedding-planner-firm/templates/charity.html">Charity Giving</a></li>
+            <li><a href="/wp-content/themes/wedding-planner-firm/templates/memories.html">Share Memory</a></li>
+        </ul>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Celebration Updates</h1>
+            <p>Follow our journey of giving, gratitude, and cherished memories</p>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Pill Tabs Navigation -->
+        <div class="pill-tabs">
+            <button class="pill-tab active" data-tab="fundraising">
+                <i class="fas fa-chart-line"></i>
+                Fundraising Update
+            </button>
+            <button class="pill-tab" data-tab="disbursement">
+                <i class="fas fa-hand-holding-heart"></i>
+                Disbursement Update
+            </button>
+            <button class="pill-tab" data-tab="media">
+                <i class="fas fa-photo-video"></i>
+                Photos & Videos
+            </button>
+            <button class="pill-tab" data-tab="messages">
+                <i class="fas fa-comments"></i>
+                Goodwill Messages
+            </button>
+            <button class="pill-tab" data-tab="thank-you">
+                <i class="fas fa-heart"></i>
+                Thank You Video
+            </button>
+            <button class="pill-tab" data-tab="brochure">
+                <i class="fas fa-book-open"></i>
+                Event Brochure
+            </button>
+        </div>
+
+        <!-- Tab Contents -->
+        
+        <!-- Fundraising Update Tab -->
+        <div class="tab-content active" id="fundraising">
+            <div class="content-card">
+                <h2>Fundraising Update</h2>
+                <p>Thank you for your generous contributions to our charitable cause. Here's an update on our fundraising progress:</p>
+                
+                <h3>Current Progress</h3>
+                <p>We are overwhelmed by the outpouring of support from our family and friends. Your contributions are making a real difference in the lives of those we're supporting.</p>
+                
+                <div class="loading">
+                    <i class="fas fa-spinner"></i>
+                    <p>Loading fundraising details...</p>
+                </div>
+                
+                <!-- Fundraising data will be loaded here via backend -->
+            </div>
+        </div>
+
+        <!-- Disbursement Update Tab -->
+        <div class="tab-content" id="disbursement">
+            <div class="content-card">
+                <h2>Disbursement Update</h2>
+                <p>Transparency is important to us. Here's how the funds raised are being distributed to our chosen charities:</p>
+                
+                <div class="loading">
+                    <i class="fas fa-spinner"></i>
+                    <p>Loading disbursement information from Google Drive...</p>
+                </div>
+                
+                <!-- Disbursement data will be loaded here via Google Drive API -->
+            </div>
+        </div>
+
+        <!-- Photos & Videos Tab -->
+        <div class="tab-content" id="media">
+            <div class="content-card">
+                <h2>Photos & Videos</h2>
+                <p>Relive the beautiful moments from our celebration:</p>
+                
+                <div class="loading">
+                    <i class="fas fa-spinner"></i>
+                    <p>Loading photos and videos...</p>
+                </div>
+                
+                <div class="gallery-grid" id="mediaGallery">
+                    <!-- Media items will be loaded here via backend -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Goodwill Messages Tab -->
+        <div class="tab-content" id="messages">
+            <div class="content-card">
+                <h2>Goodwill Messages</h2>
+                <p>Read the heartfelt messages from our loved ones:</p>
+                
+                <div class="loading">
+                    <i class="fas fa-spinner"></i>
+                    <p>Loading messages...</p>
+                </div>
+                
+                <div class="messages-grid" id="messagesContainer">
+                    <!-- Messages will be loaded here via backend -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Thank You Video Tab -->
+        <div class="tab-content" id="thank-you">
+            <div class="content-card">
+                <h2>Thank You Video</h2>
+                <p>A special message of gratitude from Abiye and Modupe:</p>
+                
+                <div class="video-container">
+                    <!-- Replace with actual video URL -->
+                    <video controls poster="/wp-content/themes/wedding-planner-firm/templates/images/video-thumbnail.jpg">
+                        <source src="/wp-content/themes/wedding-planner-firm/templates/videos/thank-you.mp4" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+                
+                <p style="margin-top: 2rem; font-style: italic; color: #555;">
+                    "From the depths of our hearts, we want to thank each and every one of you for making our celebration so special. Your presence, love, and support mean the world to us."
+                </p>
+            </div>
+        </div>
+
+        <!-- Event Brochure Tab -->
+        <div class="tab-content" id="brochure">
+            <div class="content-card">
+                <h2>Event Brochure</h2>
+                <p>View our complete event brochure with all the details from our special day:</p>
+                
+                <div class="brochure-preview">
+                    <!-- Replace with actual brochure PDF URL -->
+                    <iframe src="/wp-content/themes/wedding-planner-firm/templates/brochure.pdf"></iframe>
+                </div>
+                
+                <a href="/wp-content/themes/wedding-planner-firm/templates/brochure.pdf" download class="btn">
+                    <i class="fas fa-download"></i>
+                    Download Full Brochure
+                </a>
+            </div>
+        </div>
+    </main>
+
+                height: 600px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero h1 {
+                font-size: 1.5rem;
+            }
+
+            .pill-tab {
+                padding: 0.8rem 1.5rem;
+                font-size: 0.9rem;
+            }
+
+            .content-card {
+                padding: 1.5rem 1rem;
+            }
+
+            .content-card h2 {
+                font-size: 1.6rem;
+            }
+
+            .gallery-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .video-container iframe,
+            .video-container video {
+                height: 250px;
+            }
+
+            .brochure-preview iframe {
+                height: 500px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <button class="menu-toggle" onclick="toggleMenu()"><i class="fas fa-bars"></i></button>
+        <ul id="navMenu">
+            <li><a href="/wp-content/themes/wedding-planner-firm/templates/front-page.html">Home</a></li>
+            <li><a href="/wp-content/themes/wedding-planner-firm/templates/story.html">Our Story</a></li>
+            <li><a href="/wp-content/themes/wedding-planner-firm/templates/charity.html">Charity Giving</a></li>
+            <li><a href="/wp-content/themes/wedding-planner-firm/templates/memories.html">Share Memory</a></li>
+        </ul>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Celebration Updates</h1>
+            <p>Follow our journey of giving, gratitude, and cherished memories</p>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Pill Tabs Navigation -->
+        <div class="pill-tabs">
+            <button class="pill-tab active" data-tab="fundraising">
+                <i class="fas fa-chart-line"></i>
+                Fundraising Update
+            </button>
+            <button class="pill-tab" data-tab="disbursement">
+                <i class="fas fa-hand-holding-heart"></i>
+                Disbursement Update
+            </button>
+            <button class="pill-tab" data-tab="media">
+                <i class="fas fa-photo-video"></i>
+                Photos & Videos
+            </button>
+            <button class="pill-tab" data-tab="messages">
+                <i class="fas fa-comments"></i>
+                Goodwill Messages
+            </button>
+            <button class="pill-tab" data-tab="thank-you">
+                <i class="fas fa-heart"></i>
+                Thank You Video
+            </button>
+            <button class="pill-tab" data-tab="brochure">
+                <i class="fas fa-book-open"></i>
+                Event Brochure
+            </button>
+        </div>
+
+        <!-- Tab Contents -->
+        
+        <!-- Fundraising Update Tab -->
+        <div class="tab-content active" id="fundraising">
+            <div class="content-card">
+                <h2>Fundraising Update</h2>
+                <p>Thank you for your generous contributions to our charitable cause. Here's an update on our fundraising progress:</p>
+                
+                <h3>Current Progress</h3>
+                <p>We are overwhelmed by the outpouring of support from our family and friends. Your contributions are making a real difference in the lives of those we're supporting.</p>
+                
+                <div class="loading">
+                    <i class="fas fa-spinner"></i>
+                    <p>Loading fundraising details...</p>
+                </div>
+                
+                <!-- Fundraising data will be loaded here via backend -->
+            </div>
+        </div>
+
+        <!-- Disbursement Update Tab -->
+        <div class="tab-content" id="disbursement">
+            <div class="content-card">
+                <h2>Disbursement Update</h2>
+                <p>Transparency is important to us. Here's how the funds raised are being distributed to our chosen charities:</p>
+                
+                <div class="loading">
+                    <i class="fas fa-spinner"></i>
+                    <p>Loading disbursement information from Google Drive...</p>
+                </div>
+                
+                <!-- Disbursement data will be loaded here via Google Drive API -->
+            </div>
+        </div>
+
+        <!-- Photos & Videos Tab -->
+        <div class="tab-content" id="media">
+            <div class="content-card">
+                <h2>Photos & Videos</h2>
+                <p>Relive the beautiful moments from our celebration:</p>
+                
+                <div class="loading">
+                    <i class="fas fa-spinner"></i>
+                    <p>Loading photos and videos...</p>
+                </div>
+                
+                <div class="gallery-grid" id="mediaGallery">
+                    <!-- Media items will be loaded here via backend -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Goodwill Messages Tab -->
+        <div class="tab-content" id="messages">
+            <div class="content-card">
+                <h2>Goodwill Messages</h2>
+                <p>Read the heartfelt messages from our loved ones:</p>
+                
+                <div class="loading">
+                    <i class="fas fa-spinner"></i>
+                    <p>Loading messages...</p>
+                </div>
+                
+                <div class="messages-grid" id="messagesContainer">
+                    <!-- Messages will be loaded here via backend -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Thank You Video Tab -->
+        <div class="tab-content" id="thank-you">
+            <div class="content-card">
+                <h2>Thank You Video</h2>
+                <p>A special message of gratitude from Abiye and Modupe:</p>
+                
+                <div class="video-container">
+                    <!-- Replace with actual video URL -->
+                    <video controls poster="/wp-content/themes/wedding-planner-firm/templates/images/video-thumbnail.jpg">
+                        <source src="/wp-content/themes/wedding-planner-firm/templates/videos/thank-you.mp4" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+                
+                <p style="margin-top: 2rem; font-style: italic; color: #555;">
+                    "From the depths of our hearts, we want to thank each and every one of you for making our celebration so special. Your presence, love, and support mean the world to us."
+                </p>
+            </div>
+        </div>
+
+        <!-- Event Brochure Tab -->
+        <div class="tab-content" id="brochure">
+            <div class="content-card">
+                <h2>Event Brochure</h2>
+                <p>View our complete event brochure with all the details from our special day:</p>
+                
+                <div class="brochure-preview">
+                    <!-- Replace with actual brochure PDF URL -->
+                    <iframe src="/wp-content/themes/wedding-planner-firm/templates/brochure.pdf"></iframe>
+                </div>
+                
+                <a href="/wp-content/themes/wedding-planner-firm/templates/brochure.pdf" download class="btn">
+                    <i class="fas fa-download"></i>
+                    Download Full Brochure
+                </a>
+            </div>
+        </div>
+        }
+
+        // Load real data from backend
+        async function loadRealData() {
+            try {
+                // Load messages
+                await loadMessages();
+                
+                // Load memories (photos & videos)
+                await loadMemories();
+                
+                // Load fundraising stats
+                await loadFundraisingStats();
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+                // Show error to user
+                document.querySelectorAll('.loading').forEach(loader => {
+                    loader.innerHTML = `
+                        <div style="color: #d32f2f;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <p>Unable to load data. Please check your connection and try again.</p>
+                        </div>
+                    `;
+                
+                if (response.success && response.memories) {
+                    const mediaGallery = document.getElementById('mediaGallery');
+                    
+                    if (response.memories.length === 0) {
+                        mediaGallery.innerHTML = `
+                            <div style="text-align: center; padding: 2rem; color: #888; grid-column: 1 / -1;">
+                                <i class="fas fa-images" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                                <p>No photos or videos yet. Share your memories!</p>
+                            </div>
+                        `;
+                    } else {
+                        mediaGallery.innerHTML = response.memories.map(memory => {
+                            if (memory.type === 'photo') {
+                                return `
+                                    <div class="gallery-item">
+                                        <img src="${memory.image_url}" alt="${memory.caption || 'Celebration photo'}" 
+                                             onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22300%22%3E%3Crect fill=%22%23ddd%22 width=%22300%22 height=%22300%22/%3E%3Ctext fill=%22%23999%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3EImage unavailable%3C/text%3E%3C/svg%3E'">
+                                        ${memory.caption ? `<div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; padding: 0.5rem; font-size: 0.9rem;">${memory.caption}</div>` : ''}
+                                    </div>
+                                `;
+                            } else if (memory.type === 'video') {
+                                return `
+                                    <div class="gallery-item" onclick="this.querySelector('video').play(); this.querySelector('.play-icon').style.display='none';">
+                                        <video src="${memory.image_url}" muted controls></video>
+                                        <div class="play-icon"><i class="fas fa-play"></i></div>
+                                        ${memory.caption ? `<div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; padding: 0.5rem; font-size: 0.9rem;">${memory.caption}</div>` : ''}
+                                    </div>
+                                `;
+                            }
+                            return '';
+                        }).join('');
+                    }
+                    
+                    // Hide loading indicator for media
+                    const mediaLoading = document.querySelector('#media .loading');
+                    if (mediaLoading) mediaLoading.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error loading memories:', error);
+                throw error;
+            }
+        }
+
+        // Load fundraising stats from backend
+        async function loadFundraisingStats() {
+            try {
+                const response = await window.celebrationAPI.getStats();
+                
+                if (response.success) {
+                    const fundraisingTab = document.querySelector('#fundraising .content-card');
+                    const stats = response.stats;
+                    
+                    // Create stats display
+                    const statsHTML = `
+                        <h3>Current Statistics</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin: 2rem 0;">
+                            <div style="background: #f5e6d3; padding: 1.5rem; border-radius: 10px; text-align: center;">
+                                <div style="font-size: 2.5rem; font-weight: 600; color: #8b4513;">
+                                    ${stats.total_donations || 0}
+                                </div>
+                                <div style="color: #666; margin-top: 0.5rem;">Total Donations</div>
+                            </div>
+                            <div style="background: #f5e6d3; padding: 1.5rem; border-radius: 10px; text-align: center;">
+                                <div style="font-size: 2.5rem; font-weight: 600; color: #8b4513;">
+                                    ${stats.total_messages || 0}
+                                </div>
+                                <div style="color: #666; margin-top: 0.5rem;">Goodwill Messages</div>
+                            </div>
+                            <div style="background: #f5e6d3; padding: 1.5rem; border-radius: 10px; text-align: center;">
+                                <div style="font-size: 2.5rem; font-weight: 600; color: #8b4513;">
+                                    ${stats.total_memories || 0}
+                                </div>
+                                <div style="color: #666; margin-top: 0.5rem;">Shared Memories</div>
+                            </div>
+                        </div>
+                        
+                        <h3>Thank You!</h3>
+                        <p>Every contribution makes a difference. Your generosity is helping us support meaningful causes and create lasting impact.</p>
+                    `;
+                    
+                    // Find and replace the loading indicator
+                    const loadingDiv = fundraisingTab.querySelector('.loading');
+                    if (loadingDiv) {
+                        loadingDiv.outerHTML = statsHTML;
+                    } else {
+                        // Append if loading div not found
+                        fundraisingTab.insertAdjacentHTML('beforeend', statsHTML);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading fundraising stats:', error);
+                // Don't throw - allow other data to load
+            }
+        }
+
+        // Tab switching functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabs = document.querySelectorAll('.pill-tab');
+            const contents = document.querySelectorAll('.tab-content');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // Remove active class from all tabs and contents
+                    tabs.forEach(t => t.classList.remove('active'));
+                    contents.forEach(c => c.classList.remove('active'));
+
+                    // Add active class to clicked tab
+                    this.classList.add('active');
+
+                    // Show corresponding content
+                    const tabId = this.getAttribute('data-tab');
+                    document.getElementById(tabId).classList.add('active');
+
+                    // Scroll to content on mobile
+                    if (window.innerWidth <= 968) {
+                        document.querySelector('.main-content').scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'start' 
+                        });
+                    }
+                });
+            });
+
+            // Wait for API client to initialize, then load real data
+            setTimeout(() => {
+                loadRealData();
+            }, 1000);
+        });
+
+        // Smooth scrolling for navigation
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                    document.getElementById('navMenu').classList.remove('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

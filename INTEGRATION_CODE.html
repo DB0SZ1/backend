@@ -1,0 +1,175 @@
+<!-- ============================================ -->
+<!-- STEP 1: Add this line BEFORE the closing </body> tag -->
+<!-- ============================================ -->
+<!-- API Client Script -->
+<script src="api-client (4).js"></script>
+
+<!-- ============================================ -->
+<!-- STEP 2: Add these functions INSIDE your existing <script> tag -->
+<!-- Place them after the toggleMenu() function -->
+<!-- ============================================ -->
+
+// Load messages from backend
+async function loadMessages() {
+    try {
+        const response = await window.celebrationAPI.getMessages(50, 0);
+        
+        if (response.success && response.messages) {
+            const messagesContainer = document.getElementById('messagesContainer');
+            
+            if (response.messages.length === 0) {
+                messagesContainer.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: #888;">
+                        <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                        <p>No messages yet. Be the first to share your thoughts!</p>
+                    </div>
+                `;
+            } else {
+                messagesContainer.innerHTML = response.messages.map(msg => `
+                    <div class="message-card">
+                        <div class="author">
+                            <i class="fas fa-user-circle"></i> ${msg.name}
+                            ${msg.relationship ? `<span style="color: #888; font-weight: normal;"> (${msg.relationship})</span>` : ''}
+                        </div>
+                        <div class="message-text">"${msg.message}"</div>
+                        <div class="date">
+                            <i class="far fa-calendar"></i> ${new Date(msg.created_at).toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'})}
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            const messagesLoading = document.querySelector('#messages .loading');
+            if (messagesLoading) messagesLoading.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error loading messages:', error);
+    }
+}
+
+// Load memories (photos & videos) from backend
+async function loadMemories() {
+    try {
+        const response = await window.celebrationAPI.getMemories('all', 50, 0);
+        
+        if (response.success && response.memories) {
+            const mediaGallery = document.getElementById('mediaGallery');
+            
+            if (response.memories.length === 0) {
+                mediaGallery.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: #888; grid-column: 1 / -1;">
+                        <i class="fas fa-images" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                        <p>No photos or videos yet. Share your memories!</p>
+                    </div>
+                `;
+            } else {
+                mediaGallery.innerHTML = response.memories.map(memory => {
+                    if (memory.type === 'photo') {
+                        return `
+                            <div class="gallery-item">
+                                <img src="${memory.image_url}" alt="${memory.caption || 'Celebration photo'}">
+                                ${memory.caption ? `<div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; padding: 0.5rem;">${memory.caption}</div>` : ''}
+                            </div>
+                        `;
+                    } else if (memory.type === 'video') {
+                        return `
+                            <div class="gallery-item">
+                                <video src="${memory.image_url}" muted controls></video>
+                                <div class="play-icon"><i class="fas fa-play"></i></div>
+                                ${memory.caption ? `<div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; padding: 0.5rem;">${memory.caption}</div>` : ''}
+                            </div>
+                        `;
+                    }
+                    return '';
+                }).join('');
+            }
+            
+            const mediaLoading = document.querySelector('#media .loading');
+            if (mediaLoading) mediaLoading.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error loading memories:', error);
+    }
+}
+
+// Load fundraising stats from backend
+async function loadFundraisingStats() {
+    try {
+        const response = await window.celebrationAPI.getStats();
+        
+        if (response.success) {
+            const fundraisingTab = document.querySelector('#fundraising .content-card');
+            const stats = response.stats;
+            
+            const statsHTML = `
+                <h3>Current Statistics</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin: 2rem 0;">
+                    <div style="background: #f5e6d3; padding: 1.5rem; border-radius: 10px; text-align: center;">
+                        <div style="font-size: 2.5rem; font-weight: 600; color: #8b4513;">
+                            ${stats.donor_count || 0}
+                        </div>
+                        <div style="color: #666; margin-top: 0.5rem;">Total Donors</div>
+                    </div>
+                    <div style="background: #f5e6d3; padding: 1.5rem; border-radius: 10px; text-align: center;">
+                        <div style="font-size: 2.5rem; font-weight: 600; color: #8b4513;">
+                            ${stats.message_count || 0}
+                        </div>
+                        <div style="color: #666; margin-top: 0.5rem;">Goodwill Messages</div>
+                    </div>
+                    <div style="background: #f5e6d3; padding: 1.5rem; border-radius: 10px; text-align: center;">
+                        <div style="font-size: 2.5rem; font-weight: 600; color: #8b4513;">
+                            ${(stats.photo_count || 0) + (stats.video_count || 0)}
+                        </div>
+                        <div style="color: #666; margin-top: 0.5rem;">Shared Memories</div>
+                    </div>
+                </div>
+                
+                <h3>Thank You!</h3>
+                <p>Every contribution makes a difference. Your generosity is helping us support meaningful causes and create lasting impact.</p>
+            `;
+            
+            const loadingDiv = fundraisingTab.querySelector('.loading');
+            if (loadingDiv) {
+                loadingDiv.outerHTML = statsHTML;
+            }
+        }
+    } catch (error) {
+        console.error('Error loading fundraising stats:', error);
+    }
+}
+
+<!-- ============================================ -->
+<!-- STEP 3: REPLACE the loadSampleData() function call -->
+<!-- Find this code around line 683-685: -->
+<!--
+setTimeout(() => {
+    loadSampleData();
+}, 1500);
+-->
+<!-- REPLACE IT WITH: -->
+<!-- ============================================ -->
+
+setTimeout(async () => {
+    try {
+        await Promise.all([
+            loadMessages(),
+            loadMemories(),
+            loadFundraisingStats()
+        ]);
+    } catch (error) {
+        console.error('Error loading data:', error);
+        document.querySelectorAll('.loading').forEach(loader => {
+            loader.innerHTML = `
+                <div style="color: #d32f2f; text-align: center;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Unable to load data. Please check your connection.</p>
+                </div>
+            `;
+        });
+    }
+}, 1000);
+
+<!-- ============================================ -->
+<!-- STEP 4: DELETE the entire loadSampleData() function -->
+<!-- Remove lines 688-736 (the whole loadSampleData function) -->
+<!-- ============================================ -->

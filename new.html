@@ -1,0 +1,2444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Celebrating Abiye & Modupe</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Cinzel:wght@400;500;600&display=swap" rel="stylesheet">    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+         * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            color: #333;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        body.locked {
+            overflow: hidden;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Georgia', serif;
+        }
+
+        p, li, button, a {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        /* Password Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+
+        .modal-overlay.hidden {
+            display: none;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 3rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .modal-content h2 {
+            color: #4a2c2a;
+            margin-bottom: 1.5rem;
+            font-size: 2rem;
+        }
+
+        .modal-content p {
+            margin-bottom: 2rem;
+            color: #666;
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            font-family: 'Poppins', sans-serif;
+            text-align: center;
+        }
+
+        .modal-content input:focus {
+            outline: none;
+            border-color: #8b4513;
+        }
+
+        .modal-content button {
+            width: 100%;
+            background: #8b4513;
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: background 0.3s;
+        }
+
+        .modal-content button:hover {
+            background: #6d3410;
+        }
+
+        .error-message {
+            color: #d32f2f;
+            font-size: 0.9rem;
+            margin-top: -1rem;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        /* Navigation */
+          nav {
+            background: #5b0202;
+            padding: 1rem 10%;
+            position: fixed;
+            width: 90%;
+            left: 5%;
+            top: 15px;
+            z-index: 1000;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            flex-wrap: wrap;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        nav a:hover {
+            color: #f5e6d3;
+        }
+
+        .menu-toggle {
+            display: none;
+            background: transparent;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            position: absolute;
+            right: 2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.5rem;
+        }
+
+        /* Hero Section */
+     .hero {
+    min-height: 100vh;
+    background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), 
+                url('/wp-content/themes/wedding-planner-firm/templates/images/hero-couple.jpg');
+    background-size: cover;
+    background-position: center 25%;
+    background-repeat: no-repeat;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    color: white;
+    position: relative;
+    padding: 100px 5% 3rem 5%;
+}
+
+.hero-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    gap: 3rem;
+    flex-wrap: wrap;
+}
+
+.hero h1 {
+    font-family: 'Cinzel', serif;
+    font-size: 2.8rem;
+    margin-bottom: 0;
+    font-weight: 500;
+    letter-spacing: 1px;
+    line-height: 1.3;
+    text-align: left;
+    flex: 1 1 100%;
+    max-width: 600px;
+    min-width: 280px;
+}
+
+.hero-card {
+    background: white;
+    color: #333;
+    padding: 2.5rem;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    width: 100%;
+    max-width: 500px;
+    min-height: 280px;
+    position: relative;
+    flex-shrink: 0;
+}
+
+        .hero-card-content {
+            transition: opacity 0.5s ease;
+        }
+
+        .hero-card-content.fade {
+            opacity: 0;
+        }
+
+        .hero-card h3 {
+            color: #4a2c2a;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .hero-card p {
+            font-size: 1rem;
+            line-height: 1.7;
+        }
+
+        .btn {
+            background: #8b4513;
+            color: white;
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 1rem;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: #6d3410;
+        }
+
+        /* Our Story Section */
+        .story {
+            padding: 5rem 5%;
+            background: #f5e6d3;
+        }
+
+        .story h2 {
+            font-size: 2.5rem;
+            color: #4a2c2a;
+            margin-bottom: 3rem;
+            text-align: center;
+        }
+
+        .story-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 3rem;
+        }
+
+        .toggle-btn {
+            background: transparent;
+            color: #4a2c2a;
+            padding: 0.8rem 2rem;
+            border: 2px solid #8b4513;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .toggle-btn.active {
+            background: #8b4513;
+            color: white;
+        }
+
+        .story-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            margin-bottom: 3rem;
+        }
+
+        .story-content.reverse {
+            direction: rtl;
+        }
+
+        .story-content.reverse > * {
+            direction: ltr;
+        }
+
+        .story-section {
+            display: none;
+        }
+
+        .story-section.active {
+            display: block;
+        }
+
+        .story-images {
+    position: relative;
+    height: 500px;
+}
+
+.story-img {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center center;
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+}
+
+/* Specific positioning for My Story images */
+#myStory .story-img {
+    object-position: center 15%;
+}
+
+/* Keep Our Story centered */
+#ourStory .story-img {
+    object-position: center center;
+}
+
+        .story-img.active {
+            opacity: 1;
+        }
+
+        .story-text h3 {
+            color: #4a2c2a;
+            margin-bottom: 1rem;
+            font-size: 1.8rem;
+        }
+
+        .story-text ul {
+            list-style: none;
+            padding-left: 1rem;
+        }
+
+        .story-text li {
+            margin-bottom: 0.5rem;
+            position: relative;
+            padding-left: 1.5rem;
+        }
+
+        .story-text li:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #8b4513;
+        }
+
+        /* Gallery Section */
+        .gallery {
+            padding: 5rem 0;
+            background: #4a2c2a;
+            color: white;
+            overflow: hidden;
+        }
+
+        .gallery h2 {
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            padding: 0 5%;
+            text-align: center;
+        }
+
+        .carousel-container {
+            margin-bottom: 1.5rem;
+        }
+
+        .carousel-track {
+            display: flex;
+            gap: 1.5rem;
+            animation: scroll 30s linear infinite;
+        }
+
+        .carousel-track.reverse {
+            animation: scrollReverse 30s linear infinite;
+        }
+
+        @keyframes scroll {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-50%);
+            }
+        }
+
+        @keyframes scrollReverse {
+            0% {
+                transform: translateX(-50%);
+            }
+            100% {
+                transform: translateX(0);
+            }
+        }
+
+        .gallery-img {
+    width: 350px;
+    height: 350px; /* Increased from 250px to 350px */
+    object-fit: cover;
+    border-radius: 10px;
+    flex-shrink: 0;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+        /* Travel & Accommodation Section */
+        .travel {
+            padding: 5rem 5%;
+            background: white;
+        }
+
+        .travel h2 {
+            font-size: 2.5rem;
+            color: #4a2c2a;
+            margin-bottom: 3rem;
+            text-align: center;
+        }
+
+        .travel-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .travel-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .travel-card {
+            background: #f5e6d3;
+            padding: 2.5rem;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+
+        .travel-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .travel-card i {
+            font-size: 3rem;
+            color: #8b4513;
+            margin-bottom: 1.5rem;
+        }
+
+        .travel-card h3 {
+            color: #4a2c2a;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .accommodation-section {
+            margin-bottom: 4rem;
+        }
+
+        .accommodation-section h3 {
+            color: #4a2c2a;
+            font-size: 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .hotel-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    justify-content: center;
+}
+
+.hotel-grid .hotel-card {
+    flex: 0 0 calc(33.333% - 1rem);
+    max-width: calc(33.333% - 1rem);
+}
+
+.hotel-grid .hotel-card:nth-child(4),
+.hotel-grid .hotel-card:nth-child(5) {
+    flex: 0 0 calc(33.333% - 1rem);
+    max-width: calc(33.333% - 1rem);
+}
+
+        .hotel-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    border: 2px solid #f5e6d3;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.hotel-card h4 {
+    color: #4a2c2a;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+    text-align: center;
+}
+
+.hotel-card p {
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+    text-align: center;
+}
+        .hotel-card i {
+            color: #8b4513;
+            margin-right: 0.5rem;
+        }
+
+        .weather-attire {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .weather-box, .attire-box {
+            background: #4a2c2a;
+            color: white;
+            padding: 2.5rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .weather-box i, .attire-box i {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .weather-box h3, .attire-box h3 {
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .zoom-section {
+            margin-bottom: 3rem;
+        }
+
+        .zoom-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3rem;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .zoom-card i {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .zoom-card h3 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .zoom-details {
+            background: rgba(255,255,255,0.1);
+            padding: 2rem;
+            border-radius: 10px;
+            margin-top: 2rem;
+        }
+
+        .zoom-details p {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .zoom-btn {
+            background: white;
+            color: #667eea;
+            font-weight: 600;
+            padding: 1rem 2.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .zoom-btn:hover {
+            background: #f0f0f0;
+            color: #764ba2;
+        }
+
+        .zoom-btn i {
+            margin-right: 0.5rem;
+        }
+
+      
+
+        /* Itinerary Section */
+        .itinerary {
+            padding: 5rem 5%;
+            background: #f5e6d3;
+        }
+
+        .itinerary h2 {
+            font-size: 2.5rem;
+            color: #4a2c2a;
+            margin-bottom: 3rem;
+            text-align: center;
+        }
+
+        .itinerary-content {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .venue-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+            margin-bottom: 3rem;
+        }
+
+        .venue-img {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .venue-details {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .venue-details h3 {
+            color: #4a2c2a;
+            margin-bottom: 1.5rem;
+            font-size: 1.8rem;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+            gap: 1rem;
+        }
+
+        .detail-item i {
+            color: #8b4513;
+            font-size: 1.2rem;
+            width: 30px;
+        }
+
+        .schedule {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .schedule h3 {
+            color: #4a2c2a;
+            margin-bottom: 2rem;
+            font-size: 1.8rem;
+            text-align: center;
+        }
+
+        .schedule-item {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+            padding: 1.5rem;
+            background: #f5e6d3;
+            border-radius: 8px;
+            border-left: 4px solid #8b4513;
+        }
+
+        .schedule-time {
+            font-weight: 600;
+            color: #4a2c2a;
+            min-width: 100px;
+        }
+
+        .schedule-desc {
+            flex: 1;
+        }
+
+        .schedule-desc h4 {
+            color: #4a2c2a;
+            margin-bottom: 0.3rem;
+        }
+
+        /* Presence Section */
+        .presence {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            min-height: 500px;
+        }
+
+        .presence-text {
+            background: #4a2c2a;
+            color: white;
+            padding: 5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .presence-text h2 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .presence-img {
+            background: url('/wp-content/themes/wedding-planner-firm/templates/images/19.jpg') center/cover;
+        }
+        /* Presence Section Button Styles */
+.presence-buttons {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+}
+
+.presence-btn {
+    flex: 1;
+    min-width: 200px;
+    text-align: center;
+    padding: 1rem 2rem;
+    font-size: 1.05rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.presence-btn i {
+    font-size: 1.2rem;
+}
+
+.presence-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.presence-btn.secondary {
+    background: #f5e6d3;
+    color: #4a2c2a;
+    border: 2px solid #8b4513;
+}
+
+.presence-btn.secondary:hover {
+    background: #e6d7c4;
+    color: #4a2c2a;
+}
+
+/* Responsive adjustments for presence buttons */
+@media (max-width: 768px) {
+    .presence-buttons {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .presence-btn {
+        width: 100%;
+        min-width: auto;
+    }
+}
+
+@media (max-width: 480px) {
+    .presence-btn {
+        font-size: 0.95rem;
+        padding: 0.9rem 1.5rem;
+    }
+    
+    .presence-btn i {
+        font-size: 1rem;
+    }
+}
+
+       /* Contact Section */
+        .contact {
+            padding: 5rem 5%;
+            background: #f5e6d3;
+        }
+
+        .contact h2 {
+            font-size: 2.5rem;
+            color: #4a2c2a;
+            margin-bottom: 3rem;
+            text-align: center;
+        }
+
+        .contact-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .map-container {
+            width: 100%;
+            margin-bottom: 3rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .contact-buttons {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .contact-btn {
+            flex: 1;
+            min-width: 250px;
+            max-width: 400px;
+            text-align: center;
+            padding: 1.2rem 2.5rem;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .contact-btn i {
+            font-size: 1.3rem;
+        }
+
+        .contact-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .contact-btn.secondary {
+            background: #4a2c2a;
+            color: white;
+        }
+
+        .contact-btn.secondary:hover {
+            background: #3a1c1a;
+        }
+
+        .map-link {
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+
+        .map-link a {
+            color: #8b4513;
+            text-decoration: none;
+            font-size: 1.1rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+        }
+
+        .map-link a:hover {
+            color: #6d3410;
+            background: rgba(139, 69, 19, 0.1);
+        }
+
+        .map-link i {
+            font-size: 1.2rem;
+        }
+
+
+        /* Dropdown Menu Styles */
+.dropdown {
+    position: relative;
+}
+
+.dropdown-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.dropdown-toggle i {
+    font-size: 0.75rem;
+    transition: transform 0.3s;
+}
+
+.dropdown:hover .dropdown-toggle i {
+    transform: rotate(180deg);
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #5b0202;
+    border-radius: 10px;
+    padding: 0.5rem 0;
+    min-width: 160px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    margin-top: 0.5rem;
+    list-style: none;
+}
+
+.dropdown:hover .dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+}
+
+.dropdown-menu li {
+    padding: 0;
+}
+
+.dropdown-menu a {
+    display: block;
+    padding: 0.7rem 1.2rem;
+    color: white;
+    text-decoration: none;
+    transition: background 0.3s;
+    font-size: 0.9rem;
+}
+
+.dropdown-menu a:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+/* Thank You Section */
+.thank-you {
+    padding: 5rem 5%;
+    background: linear-gradient(135deg, #8b4513 0%, #4a2c2a 100%);
+    color: white;
+    text-align: center;
+}
+
+.thank-you-content {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.thank-you-content i {
+    font-size: 4rem;
+    color: #f5e6d3;
+    margin-bottom: 2rem;
+    animation: heartbeat 2s infinite;
+}
+
+@keyframes heartbeat {
+    0%, 100% { transform: scale(1); }
+    10%, 30% { transform: scale(1.1); }
+    20%, 40% { transform: scale(1); }
+}
+
+.thank-you h2 {
+    font-size: 3rem;
+    margin-bottom: 2rem;
+    color: #f5e6d3;
+}
+
+.thank-you p {
+    font-size: 1.2rem;
+    line-height: 1.8;
+    margin-bottom: 1.5rem;
+    color: rgba(255,255,255,0.95);
+}
+
+.thank-you p:last-child {
+    margin-bottom: 0;
+    font-style: italic;
+}
+
+
+        /* Footer */
+        footer {
+            background: #4a2c2a;
+            color: white;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 968px) {
+    nav {
+        width: 95%;
+        left: 2.5%;
+        padding: 1rem 2rem;
+    }
+
+    nav ul {
+        flex-direction: column;
+        gap: 1rem;
+        display: none;
+        background: #5b0202;
+        padding: 1rem 0;
+        border-radius: 20px;
+        margin-top: 1rem;
+    }
+
+    nav ul.active {
+        display: flex;
+    }
+
+    .menu-toggle {
+        display: block;
+    }
+
+    /* Mobile Dropdown */
+    .dropdown-menu {
+        position: static;
+        transform: none;
+        opacity: 1;
+        visibility: visible;
+        box-shadow: none;
+        background: rgba(0,0,0,0.2);
+        margin-top: 0.5rem;
+        display: none;
+    }
+
+    .dropdown.active .dropdown-menu {
+        display: block;
+    }
+
+    .dropdown-toggle i {
+        margin-left: auto;
+    }
+
+    .hero {
+    min-height: 110vh;
+    padding: 100px 3% 3rem 3%;
+    align-items: flex-end;
+}
+
+.hero-content {
+    gap: 2.5rem;
+    align-items: flex-start;
+    flex-direction: column;
+}
+
+.hero h1 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.8rem;
+    line-height: 1.3;
+    margin-bottom: 0;
+    max-width: 100%;
+    order: 1;
+}
+
+.hero-card {
+    padding: 2rem;
+    min-height: 260px;
+    max-width: 100%;
+    order: 2;
+    margin-top: auto;
+}
+
+.hero-card h3 {
+    font-size: 1.3rem;
+}
+
+.hero-card p {
+    font-size: 0.95rem;
+}
+
+            .story-content,
+            .story-content.reverse {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+                direction: ltr;
+            }
+
+            .story-images {
+                height: 350px;
+            }
+
+            .venue-section {
+            grid-template-columns: 1fr;
+        }
+
+        .venue-img {
+            height: 300px;
+        }
+
+        .venue-details {
+            padding: 2rem;
+        }
+
+        .detail-item {
+            flex-direction: row;
+            gap: 0.8rem;
+            font-size: 0.95rem;
+        }
+
+        .detail-item i {
+            font-size: 1rem;
+        }
+
+            .travel-grid {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+}
+
+.travel-card {
+    padding: 2.5rem 2rem;
+}
+
+.travel-card h3 {
+    font-size: 1.4rem;
+}
+
+.travel-card p {
+    font-size: 1rem;
+    line-height: 1.7;
+}
+
+            .hotel-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding: 0 1rem;
+}
+
+.hotel-grid .hotel-card {
+    flex: 1 1 100%;
+    max-width: 100%;
+}
+
+.hotel-grid .hotel-card:nth-child(4),
+.hotel-grid .hotel-card:nth-child(5) {
+    margin-left: 0;
+    margin-right: 0;
+    flex: 1 1 100%;
+    max-width: 100%;
+}
+
+.hotel-card {
+    padding: 2.5rem 1.5rem;
+}
+
+.hotel-card h4 {
+    font-size: 1.3rem;
+    margin-bottom: 1.2rem;
+}
+
+.hotel-card p {
+    font-size: 1rem;
+    margin-bottom: 0.8rem;
+    line-height: 1.6;
+}
+
+.hotel-card .btn {
+    margin-top: 1.5rem;
+    padding: 0.7rem 1.5rem;
+    font-size: 1rem;
+}
+
+            .weather-attire {
+                grid-template-columns: 1fr;
+            }
+
+            .zoom-card {
+                padding: 2rem 1.5rem;
+            }
+
+            .zoom-card h3 {
+                font-size: 1.5rem;
+            }
+
+            .zoom-card i {
+                font-size: 3rem;
+            }
+
+            .zoom-details {
+                padding: 1.5rem;
+            }
+
+            .zoom-details p {
+                font-size: 1rem;
+            }
+
+            .zoom-details img {
+                max-width: 100% !important;
+                height: auto;
+            }
+
+            .presence {
+                grid-template-columns: 1fr;
+            }
+
+            .presence-text {
+                padding: 3rem 1.5rem;
+            }
+
+            .presence-img {
+                min-height: 300px;
+            }
+
+            .contact-buttons {
+    flex-direction: column;
+    align-items: center;
+}
+
+.contact-btn {
+    width: 100%;
+    max-width: 100%;
+}
+
+.map-container iframe {
+    height: 350px;
+}
+
+            .story h2,
+            .gallery h2,
+            .itinerary h2,
+            .contact h2 {
+                font-size: 2rem;
+            }
+
+            .gallery-img {
+                width: 200px;
+                height: 200px;
+            }
+
+            section {
+                padding: 3rem 1.5rem !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            nav {
+                padding: 0.8rem 1.5rem;
+            }
+
+            .hero {
+    min-height: 120vh;
+    padding: 100px 1.5rem 4rem 1.5rem;
+    align-items: flex-end;
+}
+
+.hero-content {
+    gap: 2.5rem;
+    align-items: flex-start;
+    flex-direction: column;
+}
+
+.hero h1 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.5rem;
+    line-height: 1.4;
+    margin-bottom: 0;
+    order: 1;
+}
+
+.hero-card {
+    padding: 1.8rem;
+    min-height: 260px;
+    order: 2;
+    margin-top: auto;
+}
+            .story-images {
+                height: 280px;
+            }
+
+            .gallery-img {
+                width: 150px;
+                height: 150px;
+            }
+
+            .modal-content {
+                padding: 2rem;
+            }
+
+            .schedule-item {
+                flex-direction: column;
+                gap: 0.5rem;
+                padding: 1rem;
+            }
+
+            .venue-details {
+                padding: 1.5rem;
+            }
+
+            .venue-img {
+                height: 250px;
+            }
+
+            .itinerary h2 {
+                font-size: 1.8rem;
+            }
+
+            .schedule h3 {
+                font-size: 1.5rem;
+            }
+
+            .zoom-card {
+                padding: 1.5rem;
+            }
+
+            .zoom-card h3 {
+                font-size: 1.3rem;
+            }
+
+            .zoom-card i {
+                font-size: 2.5rem;
+            }
+
+            .zoom-details {
+                padding: 1rem;
+            }
+            .travel {
+    padding: 4rem 1.5rem !important;
+}
+
+.accommodation-section {
+    margin-bottom: 3rem;
+}
+            .contact-btn {
+    font-size: 1rem;
+    padding: 1rem 1.5rem;
+    min-width: 200px;
+}
+
+.contact-btn i {
+    font-size: 1.1rem;
+}
+
+.map-container iframe {
+    height: 300px;
+}
+
+.map-link a {
+    font-size: 1rem;
+}
+/* Hotel Cards Mobile */
+.hotel-grid {
+    gap: 1.5rem;
+    padding: 0 0.5rem;
+}
+
+.hotel-card {
+    padding: 2rem 1.2rem;
+}
+
+.hotel-card h4 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+}
+
+.hotel-card p {
+    font-size: 0.95rem;
+    margin-bottom: 0.7rem;
+}
+
+.hotel-card .btn {
+    margin-top: 1.2rem;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.95rem;
+    width: 100%;
+}
+
+.accommodation-section h3 {
+    font-size: 1.6rem;
+    margin-bottom: 1.5rem;
+}
+
+            .zoom-btn {
+                padding: 0.8rem 1.5rem;
+                font-size: 1rem;
+            }
+        
+
+            .schedule-time {
+                min-width: auto;
+                font-size: 1rem;
+                padding-bottom: 0.5rem;
+                border-bottom: 2px solid #8b4513;
+                margin-bottom: 0.5rem;
+            }
+
+            .schedule-desc h4 {
+                font-size: 1.1rem;
+            }
+
+            .schedule-desc p {
+                font-size: 0.9rem;
+            }
+        }
+        @media (max-width: 768px) {
+    .gallery-img {
+        width: 180px;
+        height: 180px;
+    }
+}
+
+        /* Story Modal Styles */
+        .story-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+            overflow-y: auto;
+            padding: 2rem;
+        }
+
+        .story-modal-overlay.active {
+            display: flex;
+        }
+
+        .story-modal-content {
+            background: white;
+            border-radius: 15px;
+            max-width: 1200px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: modalSlideIn 0.5s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .story-modal-close {
+            position: sticky;
+            top: 0;
+            right: 0;
+            float: right;
+            background: #8b4513;
+            color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.5rem;
+            z-index: 10;
+            margin: 1rem 1rem 0 0;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .story-modal-close:hover {
+            background: #6d3410;
+            transform: rotate(90deg);
+        }
+
+        .story-modal-body {
+            padding: 3rem;
+            clear: both;
+        }
+
+        .story-modal-image {
+            width: 100%;
+            margin-bottom: 3rem;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .story-modal-image img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .story-modal-text h2 {
+            color: #4a2c2a;
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            border-bottom: 3px solid #8b4513;
+            padding-bottom: 1rem;
+        }
+
+        .story-section-content {
+            margin-bottom: 2.5rem;
+            padding: 2rem;
+            background: #f5e6d3;
+            border-radius: 10px;
+            border-left: 5px solid #8b4513;
+        }
+
+        .story-section-content h3 {
+            color: #4a2c2a;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .story-section-content h3 i {
+            color: #8b4513;
+            font-size: 1.3rem;
+        }
+
+        .story-section-content p {
+            line-height: 1.8;
+            margin-bottom: 1rem;
+            color: #333;
+            font-size: 1.05rem;
+        }
+
+        .story-section-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .story-section-content em {
+            font-style: italic;
+            color: #555;
+        }
+
+        .story-section-content strong {
+            color: #8b4513;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        /* Modal Responsive Styles */
+        @media (max-width: 968px) {
+            .story-modal-overlay {
+                padding: 1rem;
+            }
+
+            .story-modal-body {
+                padding: 2rem 1.5rem;
+            }
+
+            .story-modal-text h2 {
+                font-size: 2rem;
+            }
+
+            .story-section-content {
+                padding: 1.5rem;
+            }
+
+            .story-section-content h3 {
+                font-size: 1.3rem;
+            }
+
+            .story-modal-close {
+                width: 45px;
+                height: 45px;
+                font-size: 1.3rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .story-modal-overlay {
+                padding: 0.5rem;
+            }
+
+            .story-modal-body {
+                padding: 1.5rem 1rem;
+            }
+
+            .story-modal-text h2 {
+                font-size: 1.6rem;
+            }
+
+            .story-section-content {
+                padding: 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .story-section-content h3 {
+                font-size: 1.2rem;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .story-section-content p {
+                font-size: 1rem;
+            }
+
+            .story-modal-close {
+                width: 40px;
+                height: 40px;
+                font-size: 1.2rem;
+                margin: 0.5rem 0.5rem 0 0;
+            }
+        }
+    </style>
+   
+</head>
+<body class="locked">
+    <!-- Password Modal -->
+    <div class="modal-overlay" id="passwordModal">
+        <div class="modal-content">
+            <h2>Welcome</h2>
+            <p>Please enter the password to continue</p>
+            <input type="password" id="passwordInput" placeholder="Enter password" autocomplete="off">
+            <div class="error-message" id="errorMessage">Incorrect password. Please try again.</div>
+            <button onclick="checkPassword()">Enter</button>
+        </div>
+    </div>
+
+   <!-- Navigation -->
+<nav>
+    <button class="menu-toggle" onclick="toggleMenu()"><i class="fas fa-bars"></i></button>
+    <ul id="navMenu">
+        <li><a href="/wp-content/themes/wedding-planner-firm/templates/front-page.html">Home</a></li>
+        <li><a href="/wp-content/themes/wedding-planner-firm/templates/story.html">Our Story</a></li>
+        <li><a href="/wp-content/themes/wedding-planner-firm/templates/charity.html">Charity Giving</a></li>
+        <li><a href="/wp-content/themes/wedding-planner-firm/templates/memories.html">Share Memory</a></li>
+        <li class="dropdown">
+            <a href="#" class="dropdown-toggle">More <i class="fas fa-chevron-down"></i></a>
+            <ul class="dropdown-menu">
+                 <li><a href="/wp-content/themes/wedding-planner-firm/templates/gallery.html">Gallery</a></li>
+                <li><a href="/wp-content/themes/wedding-planner-firm/templates/cancel.html">Cancel Reservation</a></li>
+  <li><a href="/wp-content/themes/wedding-planner-firm/templates/gratitude.html">Gratitude</a></li>
+        </li>
+<li><a href="#itinerary">Event Schedule</a></li>   
+</nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-content">
+<h1>Celebrating Abiye Hector-Goma's 60th Birthday & 30 Years of Love with Modupe Hector-Goma</h1>            <div class="hero-card">
+                <div class="hero-card-content" id="heroContent1">
+    <h3>A Celebration of Life and Love</h3>
+<p>The Hector-Goma family warmly invites you to join us at Walton View Hotel for an evening of dancing, dining, and reminiscing. Your presence is the greatest gift you could give us as we celebrate this remarkable journey. Please join us in making this milestone unforgettable.</p>
+</div>
+               <div class="hero-card-content fade" id="heroContent2" style="display:none;">
+    <h3>Walton View Hotel</h3>
+    <p>The celebration begins at 4:00 PM at Walton View Hotel, Bradford. For details of the day, travel and accommodation, explore this site.</p>
+    <a href="#travel" class="btn">Travel & Accommodation</a>
+</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Our Story -->
+    <section id="story" class="story">
+        <h2>Our Story</h2>
+        
+        <div class="story-toggle">
+            <button class="toggle-btn active" onclick="toggleStory('our')">Our Story</button>
+            <button class="toggle-btn" onclick="toggleStory('my')">My Story</button>
+        </div>
+
+        <!-- Our Story Content -->
+        <div class="story-section active" id="ourStory">
+            <div class="story-content">
+                <div class="story-images">
+                    <img src="/wp-content/themes/wedding-planner-firm/templates/images/Boy&Girl.jpg" alt="Couple" class="story-img active">
+                </div>
+                
+                <div class="story-text">
+                    <h3>Boy Meets Girl</h3>
+                    <p>It was the summer of 1990...</p>
+                    <ul>
+                        <li>The chance first meeting in Kaduna</li>
+                        <li>From Lagos to Port Harcourt - our journey</li>
+                        <li>Meeting the Omidires</li>
+                        <li>Meeting the Hector-Goma family</li>
+                        <li>Road trip to Ile-Ife</li>
+                        <li>The Big Day </li>
+                        <li>Married life in the Garden City</li>
+                        <li>Moving to the UK</li>
+                        <li>30 years of love, grace, and togetherness</li>
+                    </ul>
+                    <a href="/wp-content/themes/wedding-planner-firm/templates/story.html">
+                    <button class="btn">Read More</button>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- My Story Content -->
+        <div class="story-section" id="myStory">
+            <div class="story-content reverse">
+                <div class="story-images">
+                    <img src="/wp-content/themes/wedding-planner-firm/templates/images/abiye.jpg" alt="Personal Journey" class="story-img active">
+                </div>
+                
+                <div class="story-text">
+                    <h3>A Journey of Six Decades</h3>
+                    <p>Born in 1965 in Enugu, Eastern Nigeria, during a year of global change...</p>
+                    <ul>
+                        <li>1965: Born in Enugu - The Coal City</li>
+                        <li>The Civil War and moving to Ogoloma village</li>
+                        <li>Growing up as the original Waterside Boy</li>
+                        <li>St James's Anglican Church and the choir</li>
+                        <li>Life with Mum - a force of nature</li>
+                        <li>Common Entrance and Federal Government College</li>
+                        <li>Medical school and becoming a doctor</li>
+                        <li>From House Officer to Consultant Radiologist</li>
+                        <li>30 years of service, dedication, and impact</li>
+                    </ul>
+                    <a href="/wp-content/themes/wedding-planner-firm/templates/story.html">
+                    <button class="btn">Read More</button>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Gallery -->
+    <section id="gallery" class="gallery">
+        <h2>Gallery of Love</h2>
+        
+        <div class="carousel-container">
+          <div class="carousel-container">
+    <div class="carousel-track" data-carousel="row1">
+        <!-- Images will be loaded dynamically -->
+    </div>
+</div>
+
+<div class="carousel-container">
+    <div class="carousel-track reverse" data-carousel="row2">
+        <!-- Images will be loaded dynamically -->
+    </div>
+</div>
+        
+       <a href="/wp-content/themes/wedding-planner-firm/templates/gallery.html">
+
+        <button class="btn" style="margin: 2rem 5%;">View More</button>
+       </a> 
+    </section>
+
+    <!-- Travel & Accommodation -->
+    <section id="travel" class="travel">
+        <h2>Travel & Accommodation</h2>
+        
+        <div class="travel-content">
+            <div class="travel-grid">
+                <div class="travel-card">
+                    <i class="fas fa-plane"></i>
+                    <h3>By Air</h3>
+                    <p><strong>Leeds Bradford Airport</strong><br>
+                    20 minutes from venue<br>
+                    Direct flights from major UK and European cities</p>
+                </div>
+                <a href="/wp-content/themes/wedding-planner-firm/templates/Airport & Train.pdf" download style="text-decoration: none;">
+                    <div class="travel-card" style="cursor: pointer; transition: transform 0.3s, box-shadow 0.3s;">
+                        <i class="fas fa-car"></i>
+                        <h3>By Road</h3>
+                        <p><strong>M62 & M606</strong><br>
+                        Easy motorway access<br>
+                        Ample parking available at venue</p>
+                        <p style="margin-top: 1rem; font-size: 0.9rem; color: #8b4513; font-weight: 500;">
+                            <i class="fas fa-download" style="font-size: 1rem; margin-right: 0.5rem;"></i>
+                            Click to download guide
+                        </p>
+                    </div>
+                </a>
+                
+                <div class="travel-card">
+                    <i class="fas fa-train"></i>
+                    <h3>By Rail</h3>
+                    <p><strong>Bradford Forster Square</strong><br>
+                    15 minutes from venue<br>
+                    Regular services from London, Manchester, and Leeds</p>
+                </div>
+                
+              
+            </div>
+            
+            <div class="accommodation-section">
+                <h3>Recommended Hotels</h3>
+                <div class="hotel-grid">
+                    <div class="hotel-card">
+    <h4>Tong Park Hotel</h4>
+    <p><i class="fas fa-clock"></i> 3 mins from venue</p>
+    <a href="https://www.tongpark.co.uk" target="_blank" class="btn" style="margin-top: 1rem; padding: 0.5rem 1rem; font-size: 0.9rem;">Book Now</a>
+</div>
+                    
+                    <div class="hotel-card">
+    <h4>Cedar Court Hotels</h4>
+    <p><i class="fas fa-clock"></i> 11 mins from venue</p>
+    <a href="https://www.cedarcourthotels.co.uk" target="_blank" class="btn" style="margin-top: 1rem; padding: 0.5rem 1rem; font-size: 0.9rem;">Book Now</a>
+</div>
+                    
+                    <div class="hotel-card">
+    <h4>Hampton by Hilton Leeds</h4>
+    <p><i class="fas fa-clock"></i> 20 mins from venue</p>
+    <a href="https://www.hilton.com/en/hotels/lbahthx-hampton-leeds-city-centre/" target="_blank" class="btn" style="margin-top: 1rem; padding: 0.5rem 1rem; font-size: 0.9rem;">Book Now</a>
+</div>
+                    
+                    <div class="hotel-card">
+    <h4>Holiday Inn Express, Bradford</h4>
+    <p><i class="fas fa-clock"></i> 10 mins from venue</p>
+    <a href="https://www.ihg.com/holidayinnexpress/hotels/gb/en/bradford/brdcw/hoteldetail" target="_blank" class="btn" style="margin-top: 1rem; padding: 0.5rem 1rem; font-size: 0.9rem;">Book Now</a>
+</div>
+                    
+                    <div class="hotel-card">
+    <h4>Premier Inn Leeds South (Birstall)</h4>
+    <p><i class="fas fa-clock"></i> 15 mins from venue</p>
+    <a href="https://www.premierinn.com/gb/en/hotels/england/west-yorkshire/leeds/leeds-south-birstall.html" target="_blank" class="btn" style="margin-top: 1rem; padding: 0.5rem 1rem; font-size: 0.9rem;">Book Now</a>
+</div>
+                </div>
+            </div>
+            
+            <div class="weather-attire">
+                <div class="weather-box">
+                    <i class="fas fa-cloud-sun"></i>
+                    <h3>Weather Forecast</h3>
+                    <p>In November, Bradford is typically rainy and cold. Average daily high temperature is about 6°C.</p>
+                    <p><strong>Forecast for 29/11/25:</strong> Sunny<br>
+                    Day: 6°C | Night: 2°C</p>
+                </div>
+                
+                <div class="attire-box">
+                    <i class="fas fa-tshirt"></i>
+                    <h3>Dress Code</h3>
+                    <p><strong>Theme Colors:</strong> Burgundy & Tan</p>
+                    <p>Look good and dress warm! It will be cold outside but warm and cozy inside the venue.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Itinerary -->
+    <section id="itinerary" class="itinerary">
+    <h2>Event Schedule</h2>
+        
+        <div class="itinerary-content">
+            <div class="venue-section">
+    <video class="venue-img" autoplay loop muted playsinline style="object-fit: cover;">
+        <source src="/wp-content/themes/wedding-planner-firm/templates/fountain.mp4" type="video/mp4">
+        <img src="/wp-content/themes/wedding-planner-firm/templates/images/venue-fallback.jpg" alt="Venue">
+    </video>
+    
+    <div class="venue-details">
+        <h3>Venue Details</h3>
+        <div class="detail-item">
+            <i class="fas fa-map-marker-alt"></i>
+            <div>
+                <strong>Walton View Hotel</strong><br>
+                Tong Lane, Bradford, BD4 0RY
+            </div>
+        </div>
+        <div class="detail-item">
+            <i class="fas fa-calendar-alt"></i>
+            <div>
+                <strong>Saturday, 29th November 2025</strong>
+            </div>
+        </div>
+        <div class="detail-item">
+            <i class="fas fa-clock"></i>
+            <div>
+                <strong>4:00 PM Onwards</strong>
+            </div>
+        </div>
+        <div class="detail-item">
+            <i class="fas fa-phone"></i>
+            <div>
+                <strong>+44 7799 353 852 - Biola</strong>
+            </div>
+        </div>
+        <div class="detail-item">
+            <i class="fas fa-envelope"></i>
+            <div>
+                <strong>celebrant@watersideboy60-30.com</strong>
+            </div>
+        </div>
+        <div class="detail-item">
+            <i class="fas fa-wheelchair"></i>
+            <div>
+                <strong>Wheelchair Accessible</strong>
+            </div>
+        </div>
+        <div class="detail-item">
+            <i class="fas fa-map"></i>
+            <div>
+                <a href="https://maps.google.com/?q=Walton+View+Hotel+Bradford" target="_blank" style="color: #8b4513; text-decoration: underline;">View on Google Maps</a>
+            </div>
+        </div>
+    </div>
+</div>
+            
+<div class="zoom-section">
+                <div class="zoom-card">
+                    <i class="fas fa-video"></i>
+                    <h3>Join Us Virtually</h3>
+                    <p>Can't make it in person? Join us via Zoom!</p>
+                    <div class="zoom-details">
+                        <p><strong>Topic:</strong> 60th & 30th Golden Moments</p>
+                        <p><strong>Time:</strong> Nov 29, 2025 04:00 PM UK Time (5:00 PM Nigeria)</p>
+                        <p><strong>Meeting ID:</strong> 673 875 5770</p>
+                        <a href="https://us02web.zoom.us/j/6738755770?omn=88936357535" target="_blank" style="display: inline-block;">
+    <img src="/wp-content/themes/wedding-planner-firm/templates/images/26.jpg" alt="Join us on Zoom" style="max-width: 300px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); transition: transform 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+</a>
+                    </div>
+                </div>
+            </div>
+            
+     <div class="schedule">
+    <h3>Celebration Schedule</h3>
+
+    <div class="schedule-item">
+        <div class="schedule-time">4:00 PM</div>
+        <div class="schedule-desc">
+            <h4>Photographs & Welcome Drinks</h4>
+            <p>Arrive and enjoy welcome drinks while we capture beautiful moments</p>
+        </div>
+    </div>
+
+    <div class="schedule-item">
+        <div class="schedule-time">5:00 PM</div>
+        <div class="schedule-desc">
+            <h4>Arrival of the Wakirike – Ijaws</h4>
+            <p>Traditional entrance celebration</p>
+        </div>
+    </div>
+
+    <div class="schedule-item">
+        <div class="schedule-time">6:00 PM</div>
+        <div class="schedule-desc">
+            <h4>Celebrant’s Decades of Thanksgiving</h4>
+            <p>Stories, Hymns & Prayer</p>
+        </div>
+    </div>
+
+    <div class="schedule-item">
+        <div class="schedule-desc">
+            <h4>Fond Memories</h4>
+            <p>Aches, Tobi & Abi, The Omidires, The Goma/Williams families, School/College/University friends, The Leeds family</p>
+        </div>
+    </div>
+
+    <div class="schedule-item">
+        <div class="schedule-desc">
+            <h4>Prayer for the Celebrants</h4>
+            <p>Pastor Tony Parry</p>
+        </div>
+    </div>
+
+    <div class="schedule-item">
+        <div class="schedule-time">7:00 PM</div>
+        <div class="schedule-desc">
+            <h4>Dinner & Photo Speak</h4>
+            <p>Delicious meal with photo presentations</p>
+        </div>
+    </div>
+
+    <div class="schedule-item">
+        <div class="schedule-time">8:00 PM</div>
+        <div class="schedule-desc">
+            <h4>Arrival of the Yorubas</h4>
+            <p>Cultural celebration continues</p>
+        </div>
+    </div>
+
+    <div class="schedule-item">
+        <div class="schedule-time">9:00 PM</div>
+        <div class="schedule-desc">
+            <h4>Toast to 60th/30th & Photographs</h4>
+            <p>Celebratory toast with group photos (where you are)</p>
+        </div>
+    </div>
+
+    <div class="schedule-item">
+        <div class="schedule-time">9:30 PM</div>
+        <div class="schedule-desc">
+            <h4>Arrival of the Brits</h4>
+            <p>Final entry of the celebrants</p>
+        </div>
+    </div>
+
+    <div class="schedule-item">
+        <div class="schedule-time">10:20 PM</div>
+        <div class="schedule-desc">
+            <h4>Vote of Thanks</h4>
+            <p>Gratitude and appreciation</p>
+        </div>
+    </div>
+
+    <div class="schedule-item">
+        <div class="schedule-time">10:30 PM</div>
+        <div class="schedule-desc">
+            <h4>Old School to Afrobeats</h4>
+            <p>Dance the night away with DJ Festo & G Minor</p>
+        </div>
+    </div>
+
+    <div class="schedule-item">
+        <div class="schedule-time">11:30 PM</div>
+        <div class="schedule-desc">
+            <h4>Last Drinks</h4>
+            <p>Thank you & Good night!</p>
+        </div>
+    </div>
+
+</div>
+
+
+   <!-- Presence Section -->
+    <section class="presence">
+        <div class="presence-text">
+            <h2>Your Presence is Our Present</h2>
+            <p>We look forward to celebrating with you on the 29th of November. We would be delighted if you could share a memory or message. Your words would be as cherished as bonds and special memories we have shared with friends and family over the years.</p>
+            <div class="presence-buttons">
+                <a href="/wp-content/themes/wedding-planner-firm/templates/memories.html" class="btn presence-btn">
+                    <i class="fas fa-heart"></i> Leave a Goodwill Message
+                </a>
+                <a href="/wp-content/themes/wedding-planner-firm/templates/charity.html" class="btn presence-btn secondary">
+                    <i class="fas fa-hand-holding-heart"></i> Charitable Giving
+                </a>
+            </div>
+        </div>
+        <div class="presence-img"></div>
+    </section>
+    <!-- Thank You Section -->
+    <section class="thank-you">
+        <div class="thank-you-content">
+            <i class="fas fa-heart"></i>
+            <h2>Thank You</h2>
+            <p>From the bottom of our hearts, we extend our deepest gratitude to everyone who has been part of our journey. Your love, support, and presence mean the world to us. Whether you're joining us in person or virtually, your warmth fills our celebration with joy.</p>
+            <p>Special thanks to our family, friends, and loved ones who have made the past 60 years and 30 years of marriage so memorable. Here's to many more beautiful moments together!</p>
+        </div>
+    </section>
+
+    <!-- Contact -->
+   <section id="contact" class="contact">
+        <h2>Celebrate with Us Today</h2>
+        <div class="contact-content">
+            <div class="map-container">
+                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2358.8!2d-1.7491!3d53.7995!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNTPCsDQ3JzU4LjIiTiAxwrA0NCc1Ni44Ilc!5e0!3m2!1sen!2suk!4v1234567890" width="100%" height="500" style="border:0; border-radius: 10px;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            </div>
+            
+            <div class="contact-buttons">
+                <a href="/wp-content/themes/wedding-planner-firm/templates/FAQ.html" class="btn contact-btn">
+                    <i class="fas fa-envelope"></i> Contact Us
+                </a>
+                <a href="/wp-content/themes/wedding-planner-firm/templates/images/arriving-at-walton.mp4" class="btn contact-btn secondary" download>
+                    <i class="fas fa-download"></i> Download Venue Information
+                </a>
+            </div>
+            
+            <div class="map-link">
+                <a href="https://maps.app.goo.gl/zqFHJtw9yFCcBiGN9" target="_blank">
+                    <i class="fas fa-map-marked-alt"></i> Open in Google Maps
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+   <footer>
+    <p>&copy; 2025 Hector-Goma Celebration</p>
+</footer>
+
+   
+</div>
+
+<script>
+
+      // Password protection
+        const correctPassword = "60-30!"; 
+        
+        function checkPassword() {
+    const input = document.getElementById('passwordInput');
+    const errorMsg = document.getElementById('errorMessage');
+    
+    if (input.value === correctPassword) {
+        document.getElementById('passwordModal').classList.add('hidden');
+        document.body.classList.remove('locked');
+    } else {
+                errorMsg.classList.add('show');
+                input.value = '';
+                input.focus();
+                
+                // Shake animation
+                input.style.animation = 'shake 0.5s';
+                setTimeout(() => {
+                    input.style.animation = '';
+                }, 500);
+            }
+        }
+        
+        // Allow Enter key to submit password
+        document.getElementById('passwordInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        });
+
+        // Toggle mobile menu
+        function toggleMenu() {
+            const menu = document.getElementById('navMenu');
+            menu.classList.toggle('active');
+        }
+
+        // Toggle between Our Story and My Story
+        function toggleStory(type) {
+            const buttons = document.querySelectorAll('.toggle-btn');
+            const ourStory = document.getElementById('ourStory');
+            const myStory = document.getElementById('myStory');
+            
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            if (type === 'our') {
+                buttons[0].classList.add('active');
+                ourStory.classList.add('active');
+                myStory.classList.remove('active');
+            } else {
+                buttons[1].classList.add('active');
+                myStory.classList.add('active');
+                ourStory.classList.remove('active');
+            }
+        }
+
+        // Hero card content rotation
+        let currentCard = 1;
+        function rotateHeroContent() {
+            const content1 = document.getElementById('heroContent1');
+            const content2 = document.getElementById('heroContent2');
+            
+            if (currentCard === 1) {
+                content1.classList.add('fade');
+                setTimeout(() => {
+                    content1.style.display = 'none';
+                    content2.style.display = 'block';
+                    setTimeout(() => {
+                        content2.classList.remove('fade');
+                    }, 50);
+                }, 500);
+                currentCard = 2;
+            } else {
+                content2.classList.add('fade');
+                setTimeout(() => {
+                    content2.style.display = 'none';
+                    content1.style.display = 'block';
+                    setTimeout(() => {
+                        content1.classList.remove('fade');
+                    }, 50);
+                }, 500);
+                currentCard = 1;
+            }
+        }
+        
+        // Rotate hero content every 5 seconds
+        setInterval(rotateHeroContent, 5000);
+
+        
+// Configuration
+// Configuration
+const CAROUSEL_CONFIG = {
+    baseUrl: '/wp-content/themes/wedding-planner-firm/templates/images/',
+    goldenCelebrationUrl: '/wp-content/themes/wedding-planner-firm/templates/images/golden-celebration',
+    imageFormats: ['jpg', 'jpeg', 'png'],
+    row1Start: 140,
+    row1End: 160,
+    row2Images: [139, 140, 156, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34] // Specific images for row 2
+};
+
+// Function to try loading image with multiple formats
+function tryLoadImage(baseUrl, index, formats, formatIndex = 0) {
+    return new Promise((resolve, reject) => {
+        if (formatIndex >= formats.length) {
+            reject('No valid format found');
+            return;
+        }
+        
+        const img = new Image();
+        const currentFormat = formats[formatIndex];
+        // Ensure there's no double slash in the path
+        const separator = baseUrl.endsWith('/') ? '' : '/';
+        img.src = `${baseUrl}${separator}${index}.${currentFormat}`;
+        
+        img.onload = () => resolve({ src: img.src, format: currentFormat });
+        img.onerror = () => {
+            // Try next format
+            tryLoadImage(baseUrl, index, formats, formatIndex + 1)
+                .then(resolve)
+                .catch(reject);
+        };
+    });
+}
+
+// Function to generate image elements for a carousel track
+// Function to generate image elements for a carousel track
+async function generateCarouselImages(imageIndices, trackElement, isRange = true) {
+    trackElement.innerHTML = '';
+    
+    const loadingMsg = document.createElement('div');
+    loadingMsg.style.cssText = 'color: white; padding: 2rem; text-align: center; width: 100%;';
+    loadingMsg.textContent = 'Loading images...';
+    trackElement.appendChild(loadingMsg);
+    
+    const validImages = [];
+    let loadedCount = 0;
+    
+    // Handle range or specific array
+    const imagesToLoad = isRange ? 
+        Array.from({length: imageIndices.end - imageIndices.start + 1}, (_, i) => i + imageIndices.start) : 
+        imageIndices;
+    
+    const totalImages = imagesToLoad.length;
+    
+    // Load images in parallel for faster loading
+    const promises = imagesToLoad.map(async (i) => {
+        try {
+            const result = await tryLoadImage(CAROUSEL_CONFIG.baseUrl, i, CAROUSEL_CONFIG.imageFormats);
+            return { index: i, src: result.src };
+        } catch (error) {
+            console.warn(`Image ${i} not found in any supported format`);
+            return null;
+        }
+    });
+    
+    const results = await Promise.all(promises);
+    
+    results.forEach((result, idx) => {
+        if (result) {
+            validImages.push(result);
+            loadedCount++;
+            loadingMsg.textContent = `Loading images... ${loadedCount}/${totalImages}`;
+        }
+    });
+    
+    trackElement.innerHTML = '';
+    
+    if (validImages.length === 0) {
+        trackElement.innerHTML = '<div style="color: white; padding: 2rem; text-align: center;">No images found</div>';
+        return;
+    }
+    
+    console.log(`Found ${validImages.length} valid images for carousel`);
+    
+    // Generate images THREE times for seamless loop
+    for (let loop = 0; loop < 3; loop++) {
+        validImages.forEach(imgData => {
+            const img = document.createElement('img');
+            img.src = imgData.src;
+            img.alt = `Memory ${imgData.index}`;
+            img.className = 'gallery-img';
+            img.loading = loop === 0 ? 'eager' : 'lazy'; // First loop loads immediately
+            trackElement.appendChild(img);
+        });
+    }
+    
+    console.log(`Carousel populated with ${trackElement.children.length} total images (${validImages.length} unique × 3 loops)`);
+}
+
+// Function to generate golden celebration images
+function generateGoldenCelebrationImages(trackElement) {
+    trackElement.innerHTML = '';
+    
+    // Generate images twice for seamless loop
+    for (let loop = 0; loop < 2; loop++) {
+        for (let i = 1; i <= CAROUSEL_CONFIG.row1Count; i++) {
+            const img = document.createElement('img');
+            img.alt = `Golden Celebration ${i}`;
+            img.className = 'gallery-img';
+            
+            // Try to load image with different formats
+tryLoadImage(CAROUSEL_CONFIG.goldenCelebrationUrl, i, CAROUSEL_CONFIG.imageFormats)
+                .then(result => {
+                    img.src = result.src;
+                })
+                .catch(() => {
+                    img.style.display = 'none';
+                    console.warn(`Golden celebration image ${i} not found in any supported format`);
+                });
+            
+            trackElement.appendChild(img);
+        }
+    }
+}
+
+// Initialize carousels when DOM is loaded
+document.addEventListener('DOMContentLoaded', async function() {
+    const row1Track = document.querySelector('[data-carousel="row1"]');
+    const row2Track = document.querySelector('[data-carousel="row2"]');
+    
+    if (row1Track && row2Track) {
+        row1Track.innerHTML = '<div style="color: white; padding: 2rem; text-align: center;">Loading images...</div>';
+        row2Track.innerHTML = '<div style="color: white; padding: 2rem; text-align: center;">Loading images...</div>';
+        
+        // First carousel (images 140-160 as range)
+        await generateCarouselImages(
+            {start: CAROUSEL_CONFIG.row1Start, end: CAROUSEL_CONFIG.row1End}, 
+            row1Track, 
+            true
+        );
+        
+        // Second carousel (specific images from array)
+        await generateCarouselImages(
+            CAROUSEL_CONFIG.row2Images, 
+            row2Track, 
+            false
+        );
+        
+        console.log('Carousels loaded successfully');
+    }
+});
+// Optional: Function to reload carousel with new configuration
+async function reloadCarousel(newBaseUrl, newFormat) {
+    CAROUSEL_CONFIG.baseUrl = newBaseUrl;
+    if (newFormat) CAROUSEL_CONFIG.imageFormats = [newFormat];
+    
+    const carouselTracks = document.querySelectorAll('.carousel-track');
+    if (carouselTracks.length >= 2) {
+        await generateCarouselImages(CAROUSEL_CONFIG.row1Start, CAROUSEL_CONFIG.row1End, carouselTracks[0]);
+        await generateCarouselImages(CAROUSEL_CONFIG.row2Start, CAROUSEL_CONFIG.row2End, carouselTracks[1]);
+    }
+}
+
+        // Story Modal Functions
+        function openStoryModal() {
+            document.getElementById('storyModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeStoryModal() {
+            document.getElementById('storyModal').classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('storyModal');
+            if (event.target === modal) {
+                closeStoryModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeStoryModal();
+            }
+        });
+
+        // Story Modal Functions
+        function openStoryModal() {
+            document.getElementById('storyModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeStoryModal() {
+            document.getElementById('storyModal').classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('storyModal');
+            if (event.target === modal) {
+                closeStoryModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeStoryModal();
+            }
+        });
+        // Story images rotation for Our Story
+        let currentOurStoryImage = 0;
+        const ourStoryImages = document.querySelectorAll('#ourStory .story-img');
+        
+        function rotateOurStoryImages() {
+            ourStoryImages[currentOurStoryImage].classList.remove('active');
+            currentOurStoryImage = (currentOurStoryImage + 1) % ourStoryImages.length;
+            ourStoryImages[currentOurStoryImage].classList.add('active');
+        }
+        
+        setInterval(rotateOurStoryImages, 3000);
+
+        // Story images rotation for My Story
+        let currentMyStoryImage = 0;
+        const myStoryImages = document.querySelectorAll('#myStory .story-img');
+        
+        function rotateMyStoryImages() {
+            myStoryImages[currentMyStoryImage].classList.remove('active');
+            currentMyStoryImage = (currentMyStoryImage + 1) % myStoryImages.length;
+            myStoryImages[currentMyStoryImage].classList.add('active');
+        }
+        
+        setInterval(rotateMyStoryImages, 3000);
+
+        // Smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                    // Close mobile menu if open
+                    document.getElementById('navMenu').classList.remove('active');
+                }
+            });
+        });
+        // Mobile dropdown toggle
+document.querySelectorAll('.dropdown-toggle').forEach(toggle => {
+    toggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (window.innerWidth <= 968) {
+            this.parentElement.classList.toggle('active');
+        }
+    });
+});
+
+</script>
+</body>
+</html>
