@@ -242,56 +242,66 @@ def run_migrations():
         print(f"Migration error: {e}")
 
 def seed_from_json():
-    """Seed the database from live_data_backup.json on first boot."""
+    """Seed the database from live_data_backup.json on first boot.
+    Seeds each table independently — if messages already exist from backup.sql
+    but donations are empty, donations will still be seeded."""
     try:
+        if not os.path.exists('live_data_backup.json'):
+            print("No live_data_backup.json found for seeding.")
+            return
+
         db = get_db()
         cursor = db.cursor()
-        
+
+        with open('live_data_backup.json', 'r', encoding='utf-8-sig') as f:
+            data = json.load(f)
+
+        # --- Seed messages if table is empty ---
         cursor.execute("SELECT COUNT(*) as count FROM messages")
-        msg_count = cursor.fetchone()['count']
-        
+        if cursor.fetchone()['count'] == 0:
+            messages = data.get('messages', [])
+            for msg in messages:
+                cursor.execute(
+                    '''INSERT INTO messages (id, name, relationship, message, created_at)
+                       VALUES (?, ?, ?, ?, ?)''',
+                    (msg.get('id'), msg.get('name'), msg.get('relationship'),
+                     msg.get('message'), msg.get('created_at'))
+                )
+            print(f"Seeded {len(messages)} messages.")
+
+        # --- Seed memories if table is empty ---
         cursor.execute("SELECT COUNT(*) as count FROM memories")
-        mem_count = cursor.fetchone()['count']
-        
-        if msg_count == 0 and mem_count == 0:
-            if os.path.exists('live_data_backup.json'):
-                print("Seeding database from live_data_backup.json...")
-                import json
-                with open('live_data_backup.json', 'r', encoding='utf-8-sig') as f:
-                    data = json.load(f)
-                
-                messages = data.get('messages', [])
-                for msg in messages:
-                    cursor.execute(
-                        '''INSERT INTO messages (id, name, relationship, message, created_at)
-                           VALUES (?, ?, ?, ?, ?)''',
-                        (msg.get('id'), msg.get('name'), msg.get('relationship'), msg.get('message'), msg.get('created_at'))
-                    )
-                
-                memories = data.get('memories', [])
-                for mem in memories:
-                    cursor.execute(
-                        '''INSERT INTO memories (id, name, caption, image_url, cloudinary_id, type, storage_type, file_size, created_at)
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-                        (mem.get('id'), mem.get('name'), mem.get('caption'), mem.get('image_url'), mem.get('cloudinary_id'), 
-                         mem.get('type'), mem.get('storage_type', 'cloudinary'), mem.get('file_size', 0), mem.get('created_at'))
-                    )
-                
-                donations = data.get('donations', [])
-                for don in donations:
-                    cursor.execute(
-                        '''INSERT INTO donations (donor_name, donor_email, amount, status, stripe_payment_id)
-                           VALUES (?, ?, ?, ?, ?)''',
-                        (don.get('donor_name'), don.get('donor_email'), don.get('amount'), don.get('status', 'completed'), don.get('stripe_payment_id'))
-                    )
-                
-                db.commit()
-                print(f"Successfully seeded {len(messages)} messages, {len(memories)} memories, and {len(donations)} donations.")
-            else:
-                print("No live_data_backup.json found for seeding.")
-        
+        if cursor.fetchone()['count'] == 0:
+            memories = data.get('memories', [])
+            for mem in memories:
+                cursor.execute(
+                    '''INSERT INTO memories (id, name, caption, image_url, cloudinary_id, type, storage_type, file_size, created_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                    (mem.get('id'), mem.get('name'), mem.get('caption'),
+                     mem.get('image_url'), mem.get('cloudinary_id'),
+                     mem.get('type'), mem.get('storage_type', 'cloudinary'),
+                     mem.get('file_size', 0), mem.get('created_at'))
+                )
+            print(f"Seeded {len(memories)} memories.")
+
+        # --- Seed donations if table is empty ---
+        cursor.execute("SELECT COUNT(*) as count FROM donations")
+        if cursor.fetchone()['count'] == 0:
+            donations = data.get('donations', [])
+            for don in donations:
+                cursor.execute(
+                    '''INSERT INTO donations (donor_name, donor_email, amount, status, stripe_payment_id)
+                       VALUES (?, ?, ?, ?, ?)''',
+                    (don.get('donor_name'), don.get('donor_email'),
+                     don.get('amount'), don.get('status', 'completed'),
+                     don.get('stripe_payment_id'))
+                )
+            print(f"Seeded {len(donations)} donations.")
+
+        db.commit()
         cursor.close()
         db.close()
+        print("Database seeding from live_data_backup.json complete.")
     except Exception as e:
         print(f"Error seeding from JSON: {e}")
 
@@ -1132,7 +1142,7 @@ def get_stats():
         total_row = cursor.fetchone()
         total_raised = total_row['total'] if total_row and total_row['total'] else 0
         
-        cursor.execute("SELECT COUNT(DISTINCT donor_email) as count FROM donations WHERE status = 'completed'")
+        cursor.execute("SELECT COUNT(*) as count FROM donations WHERE status = 'completed'")
         donor_row = cursor.fetchone()
         donor_count = donor_row['count'] if donor_row else 0
         
