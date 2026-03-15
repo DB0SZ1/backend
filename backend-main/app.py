@@ -241,6 +241,60 @@ def run_migrations():
     except Exception as e:
         print(f"Migration error: {e}")
 
+def seed_from_json():
+    """Seed the database from live_data_backup.json on first boot."""
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        
+        cursor.execute("SELECT COUNT(*) as count FROM messages")
+        msg_count = cursor.fetchone()['count']
+        
+        cursor.execute("SELECT COUNT(*) as count FROM memories")
+        mem_count = cursor.fetchone()['count']
+        
+        if msg_count == 0 and mem_count == 0:
+            if os.path.exists('live_data_backup.json'):
+                print("Seeding database from live_data_backup.json...")
+                import json
+                with open('live_data_backup.json', 'r', encoding='utf-8-sig') as f:
+                    data = json.load(f)
+                
+                messages = data.get('messages', [])
+                for msg in messages:
+                    cursor.execute(
+                        '''INSERT INTO messages (id, name, relationship, message, created_at)
+                           VALUES (?, ?, ?, ?, ?)''',
+                        (msg.get('id'), msg.get('name'), msg.get('relationship'), msg.get('message'), msg.get('created_at'))
+                    )
+                
+                memories = data.get('memories', [])
+                for mem in memories:
+                    cursor.execute(
+                        '''INSERT INTO memories (id, name, caption, image_url, cloudinary_id, type, storage_type, file_size, created_at)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                        (mem.get('id'), mem.get('name'), mem.get('caption'), mem.get('image_url'), mem.get('cloudinary_id'), 
+                         mem.get('type'), mem.get('storage_type', 'cloudinary'), mem.get('file_size', 0), mem.get('created_at'))
+                    )
+                
+                donations = data.get('donations', [])
+                for don in donations:
+                    cursor.execute(
+                        '''INSERT INTO donations (donor_name, donor_email, amount, status, stripe_payment_id)
+                           VALUES (?, ?, ?, ?, ?)''',
+                        (don.get('donor_name'), don.get('donor_email'), don.get('amount'), don.get('status', 'completed'), don.get('stripe_payment_id'))
+                    )
+                
+                db.commit()
+                print(f"Successfully seeded {len(messages)} messages, {len(memories)} memories, and {len(donations)} donations.")
+            else:
+                print("No live_data_backup.json found for seeding.")
+        
+        cursor.close()
+        db.close()
+    except Exception as e:
+        print(f"Error seeding from JSON: {e}")
+
 # ========================================
 # HELPER FUNCTIONS - FIXED
 # ========================================
@@ -1073,6 +1127,7 @@ def get_stats():
         db = get_db()
         cursor = db.cursor()
         
+        # Calculate dynamic stats from db
         cursor.execute("SELECT SUM(amount) as total FROM donations WHERE status = 'completed'")
         total_row = cursor.fetchone()
         total_raised = total_row['total'] if total_row and total_row['total'] else 0
@@ -1093,6 +1148,32 @@ def get_stats():
         cursor.close()
         db.close()
         
+        charities = [
+            { 'name': 'Black Health Initiative (BHI)', 'amount': '£200.00', 'icon': 'fa-heartbeat' },
+            { 'name': 'Bridge Community Church (BCC)', 'amount': '£200.00', 'icon': 'fa-church' },
+            { 'name': 'Cape Christian Radio', 'amount': '£200.00', 'icon': 'fa-broadcast-tower' },
+            { 'name': 'CBN (700 Club) Operation Blessing', 'amount': '£100.00', 'icon': 'fa-hands-helping' },
+            { 'name': 'Christian Concern', 'amount': '£200.00', 'icon': 'fa-cross' },
+            { 'name': 'College of Health Sciences Alumni, Uniport', 'amount': '₦100,000.00', 'icon': 'fa-graduation-cap' },
+            { 'name': 'Eagle BizNet UK CIC & YBBA', 'amount': '£100.00', 'icon': 'fa-briefcase' },
+            { 'name': 'Evangelical Alliance', 'amount': '£100.00', 'icon': 'fa-users' },
+            { 'name': 'Everlasting Fathers Assembly (EFA)', 'amount': '£200.00', 'icon': 'fa-place-of-worship' },
+            { 'name': 'FGC Port Harcourt OSA (UK & Class of 1980)', 'amount': '£100.00 + ₦100k', 'icon': 'fa-school' },
+            { 'name': 'Support for Mankind Development Initiative', 'amount': '₦300,000.00', 'icon': 'fa-globe-africa' },
+            { 'name': 'New Testament Church of God Leeds', 'amount': '£200.00', 'icon': 'fa-church' },
+            { 'name': 'Nigerian Community Leeds (NCL)', 'amount': '£200.00', 'icon': 'fa-users' },
+            { 'name': "Ama ibi Gose Ogoloma Women's Cooperative", 'amount': '₦500,000.00', 'icon': 'fa-female' },
+            { 'name': 'Shalom Health International', 'amount': '£100.00', 'icon': 'fa-clinic-medical' },
+            { 'name': "St James's Church Ogoloma Scholarships", 'amount': '₦500,000.00', 'icon': 'fa-book-reader' },
+            { 'name': 'Uniport 80s Alumni Association', 'amount': '₦200,000.00', 'icon': 'fa-user-graduate' },
+            { 'name': 'Wakirike Language Programme', 'amount': '₦200,000.00', 'icon': 'fa-language' },
+            { 'name': 'Wakirike Students Union (National)', 'amount': '₦100,000.00', 'icon': 'fa-user-graduate' },
+            { 'name': 'United Christian Broadcasters', 'amount': '£100.00', 'icon': 'fa-tv' },
+            { 'name': 'Ogoloma Unity Choir Youth Skills', 'amount': '₦1,200,000.00', 'icon': 'fa-music' },
+            { 'name': 'Wakirike UK & Ireland (Language App)', 'amount': '£200.00', 'icon': 'fa-mobile-alt' },
+            { 'name': 'Seconds for Good (S4G)', 'amount': '₦200,000.00', 'icon': 'fa-clock' }
+        ]
+        
         return jsonify({
             'success': True,
             'stats': {
@@ -1101,7 +1182,8 @@ def get_stats():
                 'goal': 10000,
                 'photo_count': photo_count,
                 'video_count': video_count,
-                'message_count': message_count
+                'message_count': message_count,
+                'charities': charities
             }
         })
     except Exception as e:
@@ -1468,6 +1550,7 @@ if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
     init_db()
     run_migrations()
+    seed_from_json()
     
     # Auto-restore backup if database is empty
     backup_restoration = auto_restore_backup_on_init(
@@ -1487,6 +1570,7 @@ if __name__ == '__main__':
 # Auto-init on import (e.g., Railway, Render, etc.)
 init_db()
 run_migrations()
+seed_from_json()
 print("SQLite database initialized and migrated")
 
 # Auto-restore backup if database is empty on import

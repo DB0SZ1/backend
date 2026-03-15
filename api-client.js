@@ -1,12 +1,12 @@
 /**
- * API Client - Connected to Railway Backend
- * Backend URL: https://backend-production-65be.up.railway.app
+ * API Client - Connected to The Backend
+ * Backend URL: https://backend-mmng.onrender.com
  * Enhanced with Video Upload Support
  */
 
 const API_CONFIG = {
     // Railway backend URL
-    BASE_URL: 'https://backend-n102.onrender.com/api',
+    BASE_URL: 'https://backend-mmng.onrender.com/api',
     TIMEOUT: 60000, // 60 seconds for video uploads
     DEBUG: true,
     MAX_FILE_SIZE: {

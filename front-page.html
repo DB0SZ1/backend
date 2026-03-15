@@ -59,6 +59,65 @@
             color: #f5e6d3;
         }
 
+        /* Dropdown Menu Styles */
+        .dropdown {
+            position: relative;
+        }
+
+        .dropdown-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .dropdown-toggle i {
+            font-size: 0.75rem;
+            transition: transform 0.3s;
+        }
+
+        .dropdown:hover .dropdown-toggle i {
+            transform: rotate(180deg);
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #5b0202;
+            border-radius: 10px;
+            padding: 0.5rem 0;
+            min-width: 160px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            margin-top: 0.5rem;
+            list-style: none;
+        }
+
+        .dropdown:hover .dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .dropdown-menu li {
+            padding: 0;
+        }
+
+        .dropdown-menu a {
+            display: block;
+            padding: 0.7rem 1.2rem;
+            color: white;
+            text-decoration: none;
+            transition: background 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .dropdown-menu a:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
         .menu-toggle {
             display: none;
             background: transparent;
@@ -486,10 +545,20 @@
     <nav>
         <button class="menu-toggle" onclick="toggleMenu()"><i class="fas fa-bars"></i></button>
         <ul id="navMenu">
-            <li><a href="/wp-content/themes/wedding-planner-firm/templates/front-page.html">Home</a></li>
+            <li><a href="/wp-content/themes/wedding-planner-firm/templates/home-page.html">Home</a></li>
+            <li><a href="/wp-content/themes/wedding-planner-firm/templates/front-page.html">Updates</a></li>
             <li><a href="/wp-content/themes/wedding-planner-firm/templates/story.html">Our Story</a></li>
             <li><a href="/wp-content/themes/wedding-planner-firm/templates/charity.html">Charity Giving</a></li>
             <li><a href="/wp-content/themes/wedding-planner-firm/templates/memories.html">Share Memory</a></li>
+            <li class="dropdown">
+                <a href="#" class="dropdown-toggle">More <i class="fas fa-chevron-down"></i></a>
+                <ul class="dropdown-menu">
+                    <li><a href="/wp-content/themes/wedding-planner-firm/templates/gallery.html">Gallery</a></li>
+                    <li><a href="/wp-content/themes/wedding-planner-firm/templates/cancel.html">Cancel Reservation</a></li>
+                    <li><a href="/wp-content/themes/wedding-planner-firm/templates/gratitude.html">Gratitude</a></li>
+                </ul>
+            </li>
+            <li><a href="#itinerary">Event Schedule</a></li>   
         </ul>
     </nav>
 
@@ -555,14 +624,18 @@
         <div class="tab-content" id="disbursement">
             <div class="content-card">
                 <h2>Disbursement Update</h2>
-                <p>Transparency is important to us. Here's how the funds raised are being distributed to our chosen charities:</p>
+                <p>Transparency is important to us. Here's how the <strong>£3,989.47</strong> raised is being distributed to our chosen charities:</p>
                 
                 <div class="loading">
                     <i class="fas fa-spinner"></i>
-                    <p>Loading disbursement information from Google Drive...</p>
+                    <p>Loading disbursement information...</p>
                 </div>
                 
-                <!-- Disbursement data will be loaded here via Google Drive API -->
+                <div id="disbursementContainer" style="display:none; margin-top:2rem;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                        <!-- JS injected list -->
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -607,11 +680,7 @@
                 <p>A special message of gratitude from Abiye and Modupe:</p>
                 
                 <div class="video-container">
-                    <!-- Replace with actual video URL -->
-                    <video controls poster="/wp-content/themes/wedding-planner-firm/templates/images/video-thumbnail.jpg">
-                        <source src="/wp-content/themes/wedding-planner-firm/templates/videos/thank-you.mp4" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
+                    <iframe width="100%" height="500" src="https://www.youtube.com/embed/kRhDnsloJ24" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
                 </div>
                 
                 <p style="margin-top: 2rem; font-style: italic; color: #555;">
@@ -639,226 +708,88 @@
         </div>
     </main>
 
-                height: 600px;
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2025 Hector-Goma Celebration | With Love and Gratitude</p>
+    </footer>
+    
+    <!-- API Client Script -->
+    <script src="/wp-content/themes/wedding-planner-firm/assets/js/api-client.js"></script>
+    
+    <script>
+        // Toggle mobile menu
+        function toggleMenu() {
+            const menu = document.getElementById('navMenu');
+            if (menu) {
+                menu.classList.toggle('active');
             }
         }
 
-        @media (max-width: 480px) {
-            .hero h1 {
-                font-size: 1.5rem;
-            }
-
-            .pill-tab {
-                padding: 0.8rem 1.5rem;
-                font-size: 0.9rem;
-            }
-
-            .content-card {
-                padding: 1.5rem 1rem;
-            }
-
-            .content-card h2 {
-                font-size: 1.6rem;
-            }
-
-            .gallery-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .video-container iframe,
-            .video-container video {
-                height: 250px;
-            }
-
-            .brochure-preview iframe {
-                height: 500px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <!-- Navigation -->
-    <nav>
-        <button class="menu-toggle" onclick="toggleMenu()"><i class="fas fa-bars"></i></button>
-        <ul id="navMenu">
-            <li><a href="/wp-content/themes/wedding-planner-firm/templates/front-page.html">Home</a></li>
-            <li><a href="/wp-content/themes/wedding-planner-firm/templates/story.html">Our Story</a></li>
-            <li><a href="/wp-content/themes/wedding-planner-firm/templates/charity.html">Charity Giving</a></li>
-            <li><a href="/wp-content/themes/wedding-planner-firm/templates/memories.html">Share Memory</a></li>
-        </ul>
-    </nav>
-
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="hero-content">
-            <h1>Celebration Updates</h1>
-            <p>Follow our journey of giving, gratitude, and cherished memories</p>
-        </div>
-    </section>
-
-    <!-- Main Content -->
-    <main class="main-content">
-        <!-- Pill Tabs Navigation -->
-        <div class="pill-tabs">
-            <button class="pill-tab active" data-tab="fundraising">
-                <i class="fas fa-chart-line"></i>
-                Fundraising Update
-            </button>
-            <button class="pill-tab" data-tab="disbursement">
-                <i class="fas fa-hand-holding-heart"></i>
-                Disbursement Update
-            </button>
-            <button class="pill-tab" data-tab="media">
-                <i class="fas fa-photo-video"></i>
-                Photos & Videos
-            </button>
-            <button class="pill-tab" data-tab="messages">
-                <i class="fas fa-comments"></i>
-                Goodwill Messages
-            </button>
-            <button class="pill-tab" data-tab="thank-you">
-                <i class="fas fa-heart"></i>
-                Thank You Video
-            </button>
-            <button class="pill-tab" data-tab="brochure">
-                <i class="fas fa-book-open"></i>
-                Event Brochure
-            </button>
-        </div>
-
-        <!-- Tab Contents -->
-        
-        <!-- Fundraising Update Tab -->
-        <div class="tab-content active" id="fundraising">
-            <div class="content-card">
-                <h2>Fundraising Update</h2>
-                <p>Thank you for your generous contributions to our charitable cause. Here's an update on our fundraising progress:</p>
-                
-                <h3>Current Progress</h3>
-                <p>We are overwhelmed by the outpouring of support from our family and friends. Your contributions are making a real difference in the lives of those we're supporting.</p>
-                
-                <div class="loading">
-                    <i class="fas fa-spinner"></i>
-                    <p>Loading fundraising details...</p>
-                </div>
-                
-                <!-- Fundraising data will be loaded here via backend -->
-            </div>
-        </div>
-
-        <!-- Disbursement Update Tab -->
-        <div class="tab-content" id="disbursement">
-            <div class="content-card">
-                <h2>Disbursement Update</h2>
-                <p>Transparency is important to us. Here's how the funds raised are being distributed to our chosen charities:</p>
-                
-                <div class="loading">
-                    <i class="fas fa-spinner"></i>
-                    <p>Loading disbursement information from Google Drive...</p>
-                </div>
-                
-                <!-- Disbursement data will be loaded here via Google Drive API -->
-            </div>
-        </div>
-
-        <!-- Photos & Videos Tab -->
-        <div class="tab-content" id="media">
-            <div class="content-card">
-                <h2>Photos & Videos</h2>
-                <p>Relive the beautiful moments from our celebration:</p>
-                
-                <div class="loading">
-                    <i class="fas fa-spinner"></i>
-                    <p>Loading photos and videos...</p>
-                </div>
-                
-                <div class="gallery-grid" id="mediaGallery">
-                    <!-- Media items will be loaded here via backend -->
-                </div>
-            </div>
-        </div>
-
-        <!-- Goodwill Messages Tab -->
-        <div class="tab-content" id="messages">
-            <div class="content-card">
-                <h2>Goodwill Messages</h2>
-                <p>Read the heartfelt messages from our loved ones:</p>
-                
-                <div class="loading">
-                    <i class="fas fa-spinner"></i>
-                    <p>Loading messages...</p>
-                </div>
-                
-                <div class="messages-grid" id="messagesContainer">
-                    <!-- Messages will be loaded here via backend -->
-                </div>
-            </div>
-        </div>
-
-        <!-- Thank You Video Tab -->
-        <div class="tab-content" id="thank-you">
-            <div class="content-card">
-                <h2>Thank You Video</h2>
-                <p>A special message of gratitude from Abiye and Modupe:</p>
-                
-                <div class="video-container">
-                    <!-- Replace with actual video URL -->
-                    <video controls poster="/wp-content/themes/wedding-planner-firm/templates/images/video-thumbnail.jpg">
-                        <source src="/wp-content/themes/wedding-planner-firm/templates/videos/thank-you.mp4" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
-                </div>
-                
-                <p style="margin-top: 2rem; font-style: italic; color: #555;">
-                    "From the depths of our hearts, we want to thank each and every one of you for making our celebration so special. Your presence, love, and support mean the world to us."
-                </p>
-            </div>
-        </div>
-
-        <!-- Event Brochure Tab -->
-        <div class="tab-content" id="brochure">
-            <div class="content-card">
-                <h2>Event Brochure</h2>
-                <p>View our complete event brochure with all the details from our special day:</p>
-                
-                <div class="brochure-preview">
-                    <!-- Replace with actual brochure PDF URL -->
-                    <iframe src="/wp-content/themes/wedding-planner-firm/templates/brochure.pdf"></iframe>
-                </div>
-                
-                <a href="/wp-content/themes/wedding-planner-firm/templates/brochure.pdf" download class="btn">
-                    <i class="fas fa-download"></i>
-                    Download Full Brochure
-                </a>
-            </div>
-        </div>
-        }
-
-        // Load real data from backend
-        async function loadRealData() {
+        // Load messages from backend
+        async function loadMessages() {
             try {
-                // Load messages
-                await loadMessages();
+                if (!window.celebrationAPI) {
+                    console.error('API client not loaded yet');
+                    return;
+                }
+
+                const response = await window.celebrationAPI.getMessages(50, 0);
                 
-                // Load memories (photos & videos)
-                await loadMemories();
-                
-                // Load fundraising stats
-                await loadFundraisingStats();
-                
+                if (response.success && response.messages) {
+                    const messagesContainer = document.getElementById('messagesContainer');
+                    
+                    if (!messagesContainer) {
+                        console.error('Messages container not found');
+                        return;
+                    }
+                    
+                    if (response.messages.length === 0) {
+                        messagesContainer.innerHTML = `
+                            <div style="text-align: center; padding: 2rem; color: #888;">
+                                <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                                <p>No messages yet. Be the first to share your thoughts!</p>
+                            </div>
+                        `;
+                    } else {
+                        messagesContainer.innerHTML = response.messages.map(msg => `
+                            <div class="message-card">
+                                <div class="author">
+                                    <i class="fas fa-user-circle"></i> ${msg.name}
+                                    ${msg.relationship ? `<span style="color: #888; font-weight: normal;"> (${msg.relationship})</span>` : ''}
+                                </div>
+                                <div class="message-text">"${msg.message}"</div>
+                                <div class="date">
+                                    <i class="far fa-calendar"></i> ${new Date(msg.created_at).toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'})}
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                    
+                    const messagesLoading = document.querySelector('#messages .loading');
+                    if (messagesLoading) messagesLoading.style.display = 'none';
+                }
             } catch (error) {
-                console.error('Error loading data:', error);
-                // Show error to user
-                document.querySelectorAll('.loading').forEach(loader => {
-                    loader.innerHTML = `
-                        <div style="color: #d32f2f;">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            <p>Unable to load data. Please check your connection and try again.</p>
-                        </div>
-                    `;
+                console.error('Error loading messages:', error);
+            }
+        }
+
+        // Load memories (photos & videos) from backend
+        async function loadMemories() {
+            try {
+                if (!window.celebrationAPI) {
+                    console.error('API client not loaded yet');
+                    return;
+                }
+
+                const response = await window.celebrationAPI.getMemories('all', 50, 0);
                 
                 if (response.success && response.memories) {
                     const mediaGallery = document.getElementById('mediaGallery');
+                    
+                    if (!mediaGallery) {
+                        console.error('Media gallery not found');
+                        return;
+                    }
                     
                     if (response.memories.length === 0) {
                         mediaGallery.innerHTML = `
@@ -872,17 +803,16 @@
                             if (memory.type === 'photo') {
                                 return `
                                     <div class="gallery-item">
-                                        <img src="${memory.image_url}" alt="${memory.caption || 'Celebration photo'}" 
-                                             onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22300%22%3E%3Crect fill=%22%23ddd%22 width=%22300%22 height=%22300%22/%3E%3Ctext fill=%22%23999%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3EImage unavailable%3C/text%3E%3C/svg%3E'">
-                                        ${memory.caption ? `<div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; padding: 0.5rem; font-size: 0.9rem;">${memory.caption}</div>` : ''}
+                                        <img src="${memory.image_url}" alt="${memory.caption || 'Celebration photo'}">
+                                        ${memory.caption ? `<div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; padding: 0.5rem;">${memory.caption}</div>` : ''}
                                     </div>
                                 `;
                             } else if (memory.type === 'video') {
                                 return `
-                                    <div class="gallery-item" onclick="this.querySelector('video').play(); this.querySelector('.play-icon').style.display='none';">
+                                    <div class="gallery-item">
                                         <video src="${memory.image_url}" muted controls></video>
                                         <div class="play-icon"><i class="fas fa-play"></i></div>
-                                        ${memory.caption ? `<div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; padding: 0.5rem; font-size: 0.9rem;">${memory.caption}</div>` : ''}
+                                        ${memory.caption ? `<div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; padding: 0.5rem;">${memory.caption}</div>` : ''}
                                     </div>
                                 `;
                             }
@@ -890,70 +820,107 @@
                         }).join('');
                     }
                     
-                    // Hide loading indicator for media
                     const mediaLoading = document.querySelector('#media .loading');
                     if (mediaLoading) mediaLoading.style.display = 'none';
                 }
             } catch (error) {
                 console.error('Error loading memories:', error);
-                throw error;
             }
         }
 
-        // Load fundraising stats from backend
+        // Load fundraising stats from backend with merged actual data
         async function loadFundraisingStats() {
             try {
-                const response = await window.celebrationAPI.getStats();
-                
-                if (response.success) {
-                    const fundraisingTab = document.querySelector('#fundraising .content-card');
-                    const stats = response.stats;
-                    
-                    // Create stats display
+                // Fetch dynamic stats for memories/messages
+                let messageCount = 0;
+                let memoryCount = 0;
+                let totalRaised = '0.00';
+                let donorCount = 0;
+                let charitiesCount = 0;
+
+                if (window.celebrationAPI) {
+                    const response = await window.celebrationAPI.getStats();
+                    if (response.success && response.stats) {
+                        messageCount = response.stats.message_count || 0;
+                        memoryCount = (response.stats.photo_count || 0) + (response.stats.video_count || 0);
+                        totalRaised = response.stats.total_raised.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        donorCount = response.stats.donor_count || 0;
+                        charitiesCount = response.stats.charities ? response.stats.charities.length : 0;
+                        
+                        // Populate disbursement charities if loaded
+                        if (response.stats.charities) {
+                            renderDisbursements(response.stats.charities);
+                        }
+                    }
+                }
+
+                const fundraisingTab = document.querySelector('#fundraising .content-card');
+                if (fundraisingTab) {
                     const statsHTML = `
                         <h3>Current Statistics</h3>
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin: 2rem 0;">
-                            <div style="background: #f5e6d3; padding: 1.5rem; border-radius: 10px; text-align: center;">
-                                <div style="font-size: 2.5rem; font-weight: 600; color: #8b4513;">
-                                    ${stats.total_donations || 0}
-                                </div>
-                                <div style="color: #666; margin-top: 0.5rem;">Total Donations</div>
+                            <div style="background: linear-gradient(135deg, #f5e6d3, #fff); padding: 1.5rem; border-radius: 10px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e8d0b3;">
+                                <div style="font-size: 2.8rem; font-weight: 700; color: #8b4513;">£${totalRaised.split('.')[0]}<span style="font-size:1.5rem;">.${totalRaised.split('.')[1]}</span></div>
+                                <div style="color: #666; margin-top: 0.5rem; font-weight:500;"><i class="fas fa-pound-sign"></i> Total Raised</div>
                             </div>
-                            <div style="background: #f5e6d3; padding: 1.5rem; border-radius: 10px; text-align: center;">
-                                <div style="font-size: 2.5rem; font-weight: 600; color: #8b4513;">
-                                    ${stats.total_messages || 0}
-                                </div>
-                                <div style="color: #666; margin-top: 0.5rem;">Goodwill Messages</div>
+                            <div style="background: linear-gradient(135deg, #f5e6d3, #fff); padding: 1.5rem; border-radius: 10px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e8d0b3;">
+                                <div style="font-size: 2.8rem; font-weight: 700; color: #8b4513;">${donorCount}</div>
+                                <div style="color: #666; margin-top: 0.5rem; font-weight:500;"><i class="fas fa-users"></i> Generous Donors</div>
                             </div>
-                            <div style="background: #f5e6d3; padding: 1.5rem; border-radius: 10px; text-align: center;">
-                                <div style="font-size: 2.5rem; font-weight: 600; color: #8b4513;">
-                                    ${stats.total_memories || 0}
-                                </div>
-                                <div style="color: #666; margin-top: 0.5rem;">Shared Memories</div>
+                            <div style="background: linear-gradient(135deg, #f5e6d3, #fff); padding: 1.5rem; border-radius: 10px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e8d0b3;">
+                                <div style="font-size: 2.8rem; font-weight: 700; color: #8b4513;">${charitiesCount}</div>
+                                <div style="color: #666; margin-top: 0.5rem; font-weight:500;"><i class="fas fa-hand-holding-heart"></i> Charities Supported</div>
+                            </div>
+                            <div style="background: linear-gradient(135deg, #f5e6d3, #fff); padding: 1.5rem; border-radius: 10px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e8d0b3;">
+                                <div style="font-size: 2.8rem; font-weight: 700; color: #8b4513;">${messageCount + memoryCount}</div>
+                                <div style="color: #666; margin-top: 0.5rem; font-weight:500;"><i class="fas fa-heart"></i> Memories & Messages Shared</div>
                             </div>
                         </div>
                         
                         <h3>Thank You!</h3>
-                        <p>Every contribution makes a difference. Your generosity is helping us support meaningful causes and create lasting impact.</p>
+                        <p>Every contribution has made a profound difference. Your generosity is helping us support meaningful causes and create a lasting impact across 24 different charities and initiatives.</p>
                     `;
                     
-                    // Find and replace the loading indicator
                     const loadingDiv = fundraisingTab.querySelector('.loading');
                     if (loadingDiv) {
                         loadingDiv.outerHTML = statsHTML;
-                    } else {
-                        // Append if loading div not found
-                        fundraisingTab.insertAdjacentHTML('beforeend', statsHTML);
                     }
                 }
             } catch (error) {
                 console.error('Error loading fundraising stats:', error);
-                // Don't throw - allow other data to load
+            }
+        }
+
+        // Load disbursements populated from API array
+        function renderDisbursements(charities) {
+            const disbursementTab = document.querySelector('#disbursement .content-card');
+            if (disbursementTab) {
+                const loadingDiv = disbursementTab.querySelector('.loading');
+                if (loadingDiv) loadingDiv.style.display = 'none';
+
+                const containerBlock = document.getElementById('disbursementContainer');
+                const grid = containerBlock.querySelector('div');
+                
+                grid.innerHTML = charities.map(charity => `
+                    <div style="background: white; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #8b4513; box-shadow: 0 3px 10px rgba(0,0,0,0.08); display: flex; align-items: center; gap: 1rem; transition: transform 0.2s;">
+                        <div style="background: #f5e6d3; color: #8b4513; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0;">
+                            <i class="fas ${charity.icon}"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight: 600; color: #4a2c2a; margin-bottom: 0.2rem;">${charity.name}</div>
+                            <div style="color: #2e7d32; font-weight: 600; font-family: monospace; font-size:1.1rem;">${charity.amount}</div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                containerBlock.style.display = 'block';
             }
         }
 
         // Tab switching functionality
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('Charity Updates page loaded');
+            
             const tabs = document.querySelectorAll('.pill-tab');
             const contents = document.querySelectorAll('.tab-content');
 
@@ -968,22 +935,46 @@
 
                     // Show corresponding content
                     const tabId = this.getAttribute('data-tab');
-                    document.getElementById(tabId).classList.add('active');
+                    const targetContent = document.getElementById(tabId);
+                    if (targetContent) {
+                        targetContent.classList.add('active');
+                    }
 
                     // Scroll to content on mobile
                     if (window.innerWidth <= 968) {
-                        document.querySelector('.main-content').scrollIntoView({ 
-                            behavior: 'smooth', 
-                            block: 'start' 
-                        });
+                        const mainContent = document.querySelector('.main-content');
+                        if (mainContent) {
+                            mainContent.scrollIntoView({ 
+                                behavior: 'smooth', 
+                                block: 'start' 
+                            });
+                        }
                     }
                 });
             });
 
             // Wait for API client to initialize, then load real data
-            setTimeout(() => {
-                loadRealData();
-            }, 1000);
+            setTimeout(async () => {
+                try {
+                    console.log('Loading data from backend...');
+                    await Promise.all([
+                        loadMessages(),
+                        loadMemories(),
+                        loadFundraisingStats() // this now also renders disbursements
+                    ]);
+                    console.log('Data loading complete');
+                } catch (error) {
+                    console.error('Error loading data:', error);
+                    document.querySelectorAll('.loading').forEach(loader => {
+                        loader.innerHTML = `
+                            <div style="color: #d32f2f; text-align: center;">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <p>Unable to load data. Please check your connection.</p>
+                            </div>
+                        `;
+                    });
+                }
+            }, 1500);
         });
 
         // Smooth scrolling for navigation
@@ -996,7 +987,10 @@
                         behavior: 'smooth',
                         block: 'start'
                     });
-                    document.getElementById('navMenu').classList.remove('active');
+                    const navMenu = document.getElementById('navMenu');
+                    if (navMenu) {
+                        navMenu.classList.remove('active');
+                    }
                 }
             });
         });
