@@ -790,7 +790,8 @@
         {
             "name": "Seconds for Good (S4G)",
             "amount": "\u20a6200,000.00",
-            "icon": "fa-clock"
+            "icon": "fa-clock",
+            "website": "https://seconds4good.org/"
         }
     ]
 }
