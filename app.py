@@ -1212,7 +1212,7 @@ def get_stats():
 # ========================================
 # GOOGLE DRIVE CONFIGURATION
 # ========================================
-DRIVE_FOLDER_ID = '1mMj1zbOFqGgtlpq9h4fUZooH_Ke0wefQ'
+DRIVE_FOLDER_ID = '1I0ulGY8KOYu8jZrync2BHAdYV3MevyRW'
 DRIVE_API_KEY = os.getenv('GOOGLE_DRIVE_API_KEY')
 
 def get_drive_folder_structure(folder_id):
@@ -1297,8 +1297,12 @@ def get_drive_folder_images(folder_id):
         response = requests.get(url, params=params, timeout=15)
         response.raise_for_status()
         files = response.json().get('files', [])
+        
+        # Use backend proxy for images to handle HEIC conversion and bypass Drive limitations
+        base_api_url = request.host_url.rstrip('/')
+        
         for file in files:
-            file['imageUrl'] = f"https://drive.google.com/uc?export=view&id={file['id']}"
+            file['imageUrl'] = f"{base_api_url}/api/gallery/drive/file/{file['id']}"
             if file.get('thumbnailLink'):
                 file['thumbnailUrl'] = file['thumbnailLink'].replace('=s220', '=s400')
             else:
@@ -1318,6 +1322,80 @@ def get_drive_folder_images(folder_id):
 # ========================================
 # GOOGLE DRIVE GALLERY ENDPOINTS
 # ========================================
+@app.route('/api/gallery/drive/file/<file_id>', methods=['GET'])
+def get_drive_file_proxy(file_id):
+    """
+    Proxy Google Drive files through the backend.
+    Automatically converts HEIC to JPEG for browser compatibility.
+    """
+    if not DRIVE_API_KEY:
+        return jsonify({'error': 'Drive API key not configured'}), 500
+        
+    try:
+        # 1. Fetch file metadata to check mimeType
+        meta_url = f"https://www.googleapis.com/drive/v3/files/{file_id}"
+        meta_params = {'key': DRIVE_API_KEY, 'fields': 'name,mimeType,size'}
+        meta_resp = requests.get(meta_url, params=meta_params, timeout=10)
+        meta_resp.raise_for_status()
+        metadata = meta_resp.json()
+        
+        # 2. Fetch actual file content
+        download_url = f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media"
+        download_params = {'key': DRIVE_API_KEY}
+        file_resp = requests.get(download_url, params=download_params, timeout=30, stream=True)
+        file_resp.raise_for_status()
+        
+        filename = metadata.get('name', 'image.jpg')
+        mimetype = metadata.get('mimeType', 'image/jpeg')
+        
+        # 3. Handle HEIC conversion
+        is_heic = filename.lower().endswith(('.heic', '.heif')) or 'heic' in mimetype.lower()
+        
+        if is_heic:
+            print(f"Converting HEIC file {file_id} to JPEG...")
+            try:
+                file_bytes = file_resp.content
+                img = Image.open(io.BytesIO(file_bytes))
+                
+                # Convert to RGB if necessary
+                if img.mode != 'RGB':
+                    img = img.convert('RGB')
+                    
+                output = io.BytesIO()
+                img.save(output, format='JPEG', quality=85, optimize=True)
+                output.seek(0)
+                
+                from flask import send_file
+                return send_file(
+                    output,
+                    mimetype='image/jpeg',
+                    as_attachment=False,
+                    download_name=filename.rsplit('.', 1)[0] + '.jpg'
+                )
+            except Exception as conv_err:
+                print(f"Conversion error: {conv_err}")
+                # Fallback to original response if conversion fails
+                pass
+
+        # 4. Normal proxy for other images
+        from flask import Response
+        def generate():
+            for chunk in file_resp.iter_content(chunk_size=8192):
+                yield chunk
+                
+        return Response(
+            generate(),
+            mimetype=mimetype,
+            headers={
+                'Content-Disposition': f'inline; filename="{filename}"',
+                'Cache-Control': 'public, max-age=86400'
+            }
+        )
+        
+    except Exception as e:
+        print(f"Proxy error for {file_id}: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/gallery/drive/folders', methods=['GET'])
 def get_drive_folders():
     if not DRIVE_API_KEY:

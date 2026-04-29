@@ -1473,7 +1473,8 @@
             status: document.getElementById('explorerStatus'),
             statusText: document.getElementById('explorerStatusText'),
             backBtn: document.getElementById('btnBackToFolders'),
-            currentFolderName: document.getElementById('currentFolderName')
+            currentFolderName: document.getElementById('currentFolderName'),
+            rootId: '1I0ulGY8KOYu8jZrync2BHAdYV3MevyRW'
         };
 
         let explorerAllFolders = [];
@@ -1487,10 +1488,10 @@
                 explorer.backBtn.style.display = 'none';
                 explorer.currentFolderName.textContent = '';
 
-                // Only fetch once, using the working backend API
+                // Only fetch once
                 if (explorerAllFolders.length === 0) {
                     if (!window.celebrationAPI) throw new Error('API client not loaded');
-                    const data = await window.celebrationAPI.getGalleryFolders();
+                    const data = await window.celebrationAPI.getDriveFolders();
                     if (!data.success) throw new Error(data.message);
                     explorerAllFolders = data.folders || [];
                 }
@@ -1502,24 +1503,10 @@
                     return;
                 }
 
-                // Find the party photos folder based on a substring match
-                const partyFolder = explorerAllFolders.find(f => {
-                    const name = (f.display_name || f.name || '').toLowerCase();
-                    return name.includes('party') || name.includes('triple tee');
-                });
+                renderVirtualFolders();
 
-                if (partyFolder) {
-                    // Directly load images for the party folder, bypassing folder list
-                    await loadFolderImages(partyFolder.name, partyFolder.display_name || partyFolder.name);
-                    
-                    // Hide the back button since we bypass the folder view entirely
-                    explorer.backBtn.style.display = 'none';
-                } else {
-                    // Fallback to showing all folders if party folder isn't found
-                    renderVirtualFolders();
-                    explorer.status.style.display = 'none';
-                    explorer.folderGrid.style.display = 'grid';
-                }
+                explorer.status.style.display = 'none';
+                explorer.folderGrid.style.display = 'grid';
             } catch (err) {
                 console.error('Folder load error:', err);
                 explorer.statusText.textContent = 'Failed to load folders.';
@@ -1532,36 +1519,95 @@
             explorer.imageGrid.style.display = 'none';
             explorer.folderGrid.style.display = 'grid';
 
-            explorer.folderGrid.innerHTML = explorerAllFolders.map(f => `
-                <div class="folder-card" onclick="loadFolderImages('${f.name}', '${f.display_name || f.name}')">
-                    <div class="folder-icon"><i class="fas ${f.icon || 'fa-folder'}"></i></div>
-                    <div class="folder-name">${f.display_name || f.name}</div>
-                    <div class="folder-meta">${f.image_count || 0} items</div>
+            const partyFolderId = '1mM-olaqamckgcpCguQEB3jvXjPnrurYo';
+            const photoshootFolderId = '1rwUmavMBok_wHjA0QEUD3kDpTfEsbAey';
+            
+            const otherFolders = explorerAllFolders.filter(f => 
+                f.id !== partyFolderId && 
+                f.id !== photoshootFolderId &&
+                !f.name.toLowerCase().includes('party photos')
+            );
+
+            explorer.folderGrid.innerHTML = `
+                <div class="folder-card" onclick="loadDriveImages('${partyFolderId}', 'Party Photos', 'party')">
+                    <div class="folder-icon"><i class="fas fa-glass-cheers"></i></div>
+                    <div class="folder-name">Party Photos</div>
+                    <div class="folder-meta">The Celebration Night</div>
                 </div>
-            `).join('');
+                <div class="folder-card" onclick="loadDriveImages('${photoshootFolderId}', 'Photo Shoot', 'party')">
+                    <div class="folder-icon"><i class="fas fa-camera-retro"></i></div>
+                    <div class="folder-name">Photo Shoot</div>
+                    <div class="folder-meta">Golden Celebration</div>
+                </div>
+                <div class="folder-card" onclick="renderSubfolders('remaining')">
+                    <div class="folder-icon"><i class="fas fa-folder-open"></i></div>
+                    <div class="folder-name">Remaining Folders</div>
+                    <div class="folder-meta">${otherFolders.length} other albums</div>
+                </div>
+            `;
         }
 
-        async function loadFolderImages(folderName, displayName) {
+        function renderSubfolders(type) {
+            explorer.currentFolderName.innerHTML = Object.assign(document.createElement('span'), {
+                innerHTML: ' &nbsp;»&nbsp; Remaining Folders'
+            }).outerHTML;
+            explorer.backBtn.style.display = 'flex';
+            explorer.backBtn.onclick = renderVirtualFolders;
+
+            const partyFolderId = '1mM-olaqamckgcpCguQEB3jvXjPnrurYo';
+            const photoshootFolderId = '1rwUmavMBok_wHjA0QEUD3kDpTfEsbAey';
+
+            const folders = explorerAllFolders.filter(f => 
+                f.id !== partyFolderId && 
+                f.id !== photoshootFolderId &&
+                !f.name.toLowerCase().includes('party photos')
+            );
+
+            if (folders.length === 0) {
+                explorer.folderGrid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:3rem;color:#999;">No remaining folders found.</p>';
+            } else {
+                explorer.folderGrid.innerHTML = folders.map(f => `
+                    <div class="folder-card" onclick="loadDriveImages('${f.id}', '${f.name}', '${type}')">
+                        <div class="folder-icon"><i class="fas fa-folder"></i></div>
+                        <div class="folder-name">${f.name}</div>
+                        <div class="folder-meta">${f.imageCount || 0} items</div>
+                        <a href="https://drive.google.com/drive/folders/${f.id}" target="_blank" onclick="event.stopPropagation();" style="font-size:0.75rem; color:var(--saddle); text-decoration:none; margin-top:0.3rem;"><i class="fas fa-download"></i> Open/Download</a>
+                    </div>
+                `).join('');
+            }
+        }
+
+        async function loadDriveImages(folderId, name, parentType) {
             try {
                 explorer.status.style.display = 'block';
-                explorer.statusText.textContent = `Opening ${displayName}…`;
+                explorer.statusText.textContent = `Opening ${name}…`;
                 explorer.folderGrid.style.display = 'none';
                 explorer.imageGrid.style.display = 'none';
 
                 if (!window.celebrationAPI) throw new Error('API client not loaded');
-                const data = await window.celebrationAPI.getGalleryImages(folderName);
+                const data = await window.celebrationAPI.getDriveImages(folderId);
 
                 if (!data.success) throw new Error(data.message);
 
-                explorer.currentFolderName.innerHTML = ` &nbsp;»&nbsp; <span>${displayName}</span>`;
+                if (parentType === 'party') {
+                    explorer.currentFolderName.innerHTML = ` &nbsp;»&nbsp; <span>${name}</span>`;
+                    explorer.backBtn.style.display = 'flex';
+                    explorer.backBtn.onclick = renderVirtualFolders;
+                } else {
+                    const parentTitle = 'Remaining Folders';
+                    explorer.currentFolderName.innerHTML = ` &nbsp;»&nbsp; <span style="cursor:pointer;" onclick="renderSubfolders('${parentType}')">${parentTitle}</span> &nbsp;»&nbsp; <span>${name}</span>`;
+                    explorer.backBtn.style.display = 'flex';
+                    explorer.backBtn.onclick = () => renderSubfolders(parentType);
+                }
 
                 if (!data.images || data.images.length === 0) {
                     explorer.imageGrid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:3rem;color:#999;">This folder is empty.</p>';
                 } else {
                     explorer.imageGrid.innerHTML = data.images.map(img => `
                         <div class="gallery-item">
-                            <img src="${img.image_url}" alt="Photo" loading="lazy">
-                            <a href="${img.image_url}" target="_blank" style="position:absolute; top:10px; right:10px; background:rgba(255,255,255,0.8); color:var(--brown); padding:0.4rem; border-radius:50%; z-index:10;"><i class="fas fa-external-link-alt"></i></a>
+                            <img src="${img.thumbnailUrl}" data-full="${img.imageUrl}" alt="${img.name}" loading="lazy">
+                            <div class="gallery-cap">${img.name}</div>
+                            <a href="${img.imageUrl}" target="_blank" style="position:absolute; top:10px; right:10px; background:rgba(255,255,255,0.8); color:var(--brown); padding:0.4rem; border-radius:50%; z-index:10;"><i class="fas fa-download"></i></a>
                         </div>
                     `).join('');
                 }
