@@ -10,7 +10,7 @@ const API_CONFIG = {
     TIMEOUT: 60000, // 60 seconds for video uploads
     DEBUG: true,
     MAX_FILE_SIZE: {
-        IMAGE: 5 * 1024 * 1024,  // 5MB for images
+        IMAGE: 10 * 1024 * 1024,  // 10MB for images
         VIDEO: 25 * 1024 * 1024  // 25MB for videos (Railway upload limit)
     }
 };
@@ -342,11 +342,17 @@ class CelebrationAPI {
             try {
                 APIUtils.validateFileSize(file, 'image');
                 
-                // Compress image before upload
-                const compressed = await APIUtils.compressImage(file);
-                compressedFormData.append('photos[]', compressed, file.name);
-                
-                APIUtils.log(`Compressed ${file.name}: ${APIUtils.formatFileSize(file.size)} → ${APIUtils.formatFileSize(compressed.size)}`);
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (ext === 'heic' || ext === 'heif') {
+                    // Skip client-side compression for HEIC/HEIF; backend handles it via pillow_heif
+                    compressedFormData.append('photos[]', file, file.name);
+                    APIUtils.log(`Skipped client compression for HEIC file: ${file.name}`);
+                } else {
+                    // Compress image before upload
+                    const compressed = await APIUtils.compressImage(file);
+                    compressedFormData.append('photos[]', compressed, file.name);
+                    APIUtils.log(`Compressed ${file.name}: ${APIUtils.formatFileSize(file.size)} → ${APIUtils.formatFileSize(compressed.size)}`);
+                }
             } catch (error) {
                 throw new Error(`Failed to process ${file.name}: ${error.message}`);
             }
@@ -441,21 +447,6 @@ class CelebrationAPI {
     // ========================================
     async getStats() {
         return this.get('stats');
-    }
-
-    // ========================================
-    // GOOGLE DRIVE GALLERY API
-    // ========================================
-    async getDriveFolders() {
-        return this.get('gallery/drive/folders');
-    }
-
-    async getDriveImages(folderId) {
-        return this.get('gallery/drive/images', { folderId });
-    }
-
-    async syncDriveGallery() {
-        return this.post('gallery/drive/sync', {});
     }
 
     // ========================================

@@ -63,7 +63,7 @@ app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max request size
 app.config['UPLOAD_FOLDER'] = 'uploads/videos'
 
 # File size limits
-MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB
+MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10MB
 MAX_VIDEO_SIZE = 50 * 1024 * 1024  # 50MB for Cloudinary free tier
 USE_LOCAL_VIDEO_STORAGE = os.getenv('USE_LOCAL_VIDEO_STORAGE', 'false').lower() == 'true'
 
@@ -660,10 +660,11 @@ def submit_photo_memory():
             file.seek(0)
             
             if file_size > MAX_IMAGE_SIZE:
-                errors.append(f"{file.filename} exceeds 5MB limit")
+                errors.append(f"{file.filename} exceeds 10MB limit")
                 continue
             
-            if not file.content_type.startswith('image/'):
+            is_heic = file.filename.lower().endswith(('.heic', '.heif'))
+            if not file.content_type.startswith('image/') and not is_heic:
                 errors.append(f"{file.filename} is not an image")
                 continue
             
